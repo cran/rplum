@@ -108,12 +108,6 @@ The grey-scale reconstruction around the oldest ages of any reconstruction often
 This is due to only some MCMC iterations reaching those old ages, and these iterations will have modelled very slow accumulation rates.
 Currently does not deal well with hiatuses, so do not interpret accumulation rates close to depths with inferred hiatuses.
 }
-\examples{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(yr.res=50, d.res=50, d.by=10)
-  layout(1)
-  accrate.age.ghost()
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

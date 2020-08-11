@@ -76,12 +76,6 @@ This plot shows the modelled accumulation rates in grey-scales, where darker gre
 Axis limits for accumulation rates are estimated automatically, however upper limits can be very variable (and thus hard to predict)
 if calculated in cm/yr; therefore you might want to manually adapt the axis limits after plotting with default settings (e.g., \code{acc.lim=c(0,1)}). See also \code{accrate.age.ghost}, \code{accrate.depth} and \code{accrate.age}.
 }
-\examples{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(yr.res=50, d.res=50, d.by=10)
-  layout(1)
-  accrate.depth.ghost()
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

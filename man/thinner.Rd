@@ -20,19 +20,6 @@ Randomly thin iterations by a given proportion, for example if autocorrelation i
 \details{
 From all iterations, a proportion is removed with to-be-removed iterations sampled randomly among all iterations.
 }
-\examples{
-\dontshow{
-  Plum(run=FALSE, coredir=tempfile())
-  thinner(.1)
-  agedepth(d.res=50, age.res=50, d.by=10)
-}
-\donttest{
-  Plum(ask=FALSE, coredir=tempfile())
-  thinner(.2)
-  agedepth()
-}
-
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

@@ -102,11 +102,6 @@ Produce a plot of the dated depths and their dates
 This function is generally called internally to produce the age-depth graph.
 It can be used to produce custom-built graphs.
 }
-\examples{
-  Plum(run=FALSE, coredir=tempfile())
-  calib.plot()
-
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

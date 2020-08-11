@@ -15,13 +15,6 @@
 #' @param cmyr Accumulation rates can be calculated in cm/year or year/cm. By default \code{cmyr=FALSE} and accumulation rates are calculated in year per cm.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return all MCMC estimates of accumulation rate of the chosen depth.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50, d.res=50, d.by=10)
-#'   d20 <- accrate.depth(20)
-#'   hist(d20)
-#'   d20 <- accrate.depth(20, cmyr=TRUE) # to calculate accumulation rates in cm/yr
-#'   mean(d20)
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -52,12 +45,6 @@ accrate.depth <- function(d, set=get('info'), cmyr=FALSE) {
 #' @param BCAD The calendar scale of graphs and age output-files is in \code{cal BP} by default, but can be changed to BC/AD using \code{BCAD=TRUE}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return all MCMC estimates of accumulation rate of the chosen age.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50, d.res=50, d.by=10)
-#'   accrate.a50 = accrate.age(50)
-#'   plot(accrate.a50, pch='.')
-#'   hist(accrate.a50)
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -113,11 +100,6 @@ accrate.age <- function(age, set=get('info'), cmyr=FALSE, BCAD=set$BCAD) {
 #' @param rev.acc The direction of the accumulation rate axis can be reversed from the default (\code{rev.acc=TRUE}).
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A grey-scale plot of accumulation rate against core depth.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50, d.res=50, d.by=10)
-#'   layout(1)
-#'   accrate.depth.ghost()
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -227,11 +209,6 @@ accrate.depth.ghost <- function(set=get('info'), d=set$elbows, d.lim=c(), acc.li
 #' @param bty Type of box to be drawn around the plot (\code{"n"} for none, and \code{"l"} (default), \code{"7"}, \code{"c"}, \code{"u"}, or \code{"o"} for correspondingly shaped boxes).
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A greyscale plot of accumulation rate against calendar age.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50, d.res=50, d.by=10)
-#'   layout(1)
-#'   accrate.age.ghost()
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -240,8 +217,8 @@ accrate.depth.ghost <- function(set=get('info'), d=set$elbows, d.lim=c(), acc.li
 #' @export
 accrate.age.ghost <- function(set=get('info'), age.lim=c(), yr.lim=age.lim, age.lab=c(), yr.lab=age.lab, age.res=200, yr.res=age.res, grey.res=50, prob=.95, plot.range=TRUE, range.col=grey(0.5), range.lty=2, plot.mean=TRUE, mean.col="red", mean.lty=2, acc.lim=c(), acc.lab=c(), upper=0.99, dark=50, BCAD=set$BCAD, cmyr=FALSE, rotate.axes=FALSE, rev.age=FALSE, rev.yr=rev.age, rev.acc=FALSE, xaxs="i", yaxs="i", bty="l") {
   if(length(age.lim) == 0) {
-    min.age <- min(set$ranges[,2])
-    max.age <- max(set$ranges[,3])
+    min.age <- min(set$ranges[,2])+1
+    max.age <- max(set$ranges[,3])-1
   } else {
       min.age <- min(age.lim)
       max.age <- max(age.lim)
@@ -268,6 +245,7 @@ accrate.age.ghost <- function(set=get('info'), age.lim=c(), yr.lim=age.lim, age.
     hist.list$y[[i]] <- acc$y/sum(acc$y)
     rng <- quantile(accs, c((1-prob)/2, 1-((1-prob)/2)))
 #    hist.list$mn.rng[,i] <- mean(accs[!is.na(accs)])
+accs <<- accs
     hist.list$mn.rng[i] <- mean(accs)
     hist.list$min.rng[i] <- rng[1]
     hist.list$max.rng[i] <- rng[2]
@@ -369,13 +347,6 @@ accrate.age.ghost <- function(set=get('info'), age.lim=c(), yr.lim=age.lim, age.
 #' @param rev.yr Deprecated - use rev.age instead
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A plot of flux rates.
-#' @examples
-#' \donttest{
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50)
-#'   flux <- cbind(1:25, rnorm(25, 100, 10)) # fake time-series
-#'   flux.age.ghost(flux=flux)
-#' }
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive

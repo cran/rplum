@@ -18,11 +18,19 @@
 #' @name rplum
 NULL
 
-# done rplum: removed inset option as it caused too many issue post-plotting, thinned the nrows of the .out and _plum.out files that come in the R package to 3k, in order to reduce the package's file size. Added Plum-relevant code to agedepth function and removed agedepth.plum function and its file agedepth_plum.R. Removed lines 1-17 in Bacon.R since replicated in Plum.R, agedepth() now works as expected after a run, changed order of initial options to be more bacon-like (core name, section thickness), renamed option core2 (filename of other dates) to otherdates
+# Removed lines 1-17 in Bacon.R since replicated in Plum.R, agedepth() now works as expected after a run, rev.age works as expected, changed order of initial options to be more bacon-like (core name, section thickness), renamed option core2 (filename of other dates) to otherdates
 
-# do plum: check how to make rev.age work, check if ResCor is done correctly if using a C14-file, consider replacing bluescales with blobs, check if age.max etc. work, separate rbacon and rplum (#' @import rbacon), A.rng and Ai (in calibrate.plum.plot() somehow don't want to be saved to info (needed to provide post-run info on fit 210Pb data), remove Bacon.R (so that no need for running long-lasting examples)? build note that package is large (remove MSB2K and RLGH3?), why does HP1C return only 30 cm if the core is 50 cm long (bottom 4 measurements removed and not even included in the run), is it OK that d.min is set at 0 by default?, check and adapt confusing description and default of n.supp, add a red line showing the depths and mean value of the supported measurements if info$supportedData used
+# it seems that depths.file=T doesn't work
+
+# when running Plum(), all input looks fine. When running Plum('LL14'), the .bacon file looks fine, but the terminal reports strange numbers for 210Pb and supported. Check. Are these simply the numbers for estimating supported? 
+
+# does Plum.cleanup work? 
+
+# if date.sample is not given (in the file or as option), then it is not asked for and age calculations are wrong
 
 # we need to explain clearly the radon cases and n.supp. Current explanations are confusing. Also, explain how to make the relevant files (in case of constant supported, individual supported, 210Pb and other data, ...)
+
+# do plum: check if ResCor is done correctly if using a C14-file, consider replacing bluescales with blobs, check if age.max etc. work, separate rbacon and rplum (#' @import rbacon), A.rng and Ai (in calibrate.plum.plot() somehow don't want to be saved to info (needed to provide post-run info on fit 210Pb data), remove Bacon.R (so that no need for running long-lasting examples)? build note that package is large (remove MSB2K and RLGH3?), why does HP1C return only 30 cm if the core is 50 cm long (bottom 4 measurements removed and not even included in the run), is it OK that d.min is set at 0 by default?, check and adapt confusing description and default of n.supp, add a red line showing the depths and mean value of the supported measurements if info$supportedData used
 
 #' @name Plum
 #' @title  Main 210Pb age-depth modelling function
@@ -39,11 +47,11 @@ NULL
 #' also constrained by prior information (\code{hiatus.max}). The 210Pb flux (phi) and supported 210Pb (s) are constrained by priors \code{phi.mean, phi.shape, s.mean and s.shape}.  
 #'
 #' Although Plum was developed for 210Pb dates, it can also include absolute dates (e.g., 14C, OSL, tephra or other dates on a calendar scale).
-#' Radiocarbon dates should be calibrated using either IntCal13
-#' (for terrestrial northern hemisphere material; Reimer et al., 2013), Marine13 (for marine dates; Reimer et al., 2013),
-#' SHCal13 (for southern hemisphere dates; Hogg et al., 2013) or any other calibration curve (see below), while modern 14C
+#' Radiocarbon dates should be calibrated using either IntCal20
+#' (for terrestrial northern hemisphere material; Reimer et al., 2020), Marine20 (for marine dates; Hughen et al., 2020),
+#' SHCal20 (for southern hemisphere dates; Hogg et al., 2020) or any other calibration curve (see below), while modern 14C
 #' dates are calibrated using one of the post-bomb calibration curves (NH1, NH2 or NH3 for the northern hemisphere,
-#' SH1-2 or SH3 for the southern hemisphere; Hua et al., 2013). See \url{http://calib.org/CALIBomb} if you are unsure which
+#' SH1-2 or SH3 for the southern hemisphere; Hua et al., 2013). See \url{http://calib.org/CALIBomb/} if you are unsure which
 #' postbomb curve you need. If Plum finds postbomb dates (negative 14C ages) and you haven't specified a postbomb curve,
 #' you will be prompted. Provide postbomb curves as, e.g., \code{postbomb=1} for the NH1 postbomb curve (2 for NH2, 3 for NH3,
 #' 4 for SH1-2, 5 for SH3).
@@ -57,13 +65,14 @@ NULL
 #' @param otherdates Name of (optional) file with radiocarbon dates. This file should have the same format as the one used for Bacon, \code{otherdates=""}
 #' @param coredir Folder where the core's files \code{core} are and/or will be located. This will be a folder with the core's name, within either the folder \code{coredir='Plum_runs/'}, or the folder Cores/ if it already exists within R's working directory, or a custom-built folder. For example, use \code{coredir="."} to place the core's folder within the current working directory, or \code{coredir="F:"} if you want to put the core's folder and files on a USB drive loaded under F:.
 #' Thinner (and thus more) sections will result in smoother age-models, but too many sections can cause `run-away' models.
-#' @param n.supp This value will delete n.supp data points from the deepest part of the core, and these points will then be used exclusively to estimate the supported activity. If this option is used, a constant supported $^{210}Pb$ will be assumed, \code{n.supp=-1}.
 #' @param phi.shape Shape parameter of the prior gamma distribution used for the influx of $^{210}Pb$ to the sediment, default \code{phi.shape=2}.
 #' @param phi.mean Mean parameter of the prior gamma distribution used for the influx of $^{210}Pb$ to the sediment, default \code{phi.mean=50}.
 #' @param s.shape Shape parameter of the prior gamma distribution used for the supported $^{210}Pb$ to the sediment, default \code{s.shape=5}.
 #' @param s.mean Mean parameter of the prior gamma distribution used for the supported $^{210}Pb$ to the sediment, default \code{s.mean=10}.
-#' @param Al Parameter used to limit the chronologies described in Aquino-Lopez et al. (2018) for the minimum distinguishable unsupported activity, default \code{Al=0.01}.
-#' @param date.sample Date at which the core was measured for 210Pb. This date will be used as a surface date and is assumed to have no uncertainty, \code{date.sample=NA}.
+#' @param Al Parameter used to limit the chronologies described in Aquino-Lopez et al. (2018) for the minimum distinguishable unsupported activity; default \code{Al=0.1}.
+#' @param date.sample Date at which the core was measured for Pb-120. This date will be used as a surface date and is assumed to have no uncertainty, \code{date.sample=NA}. If the date is not provided (in the .csv file or as \code{date.sample}), Plum will ask for it.
+#' @param n.supp This value will delete n.supp data points from the deepest part of the core, and these points will then be used exclusively to estimate the supported activity. If this option is used, a constant supported $^{210}Pb$ will be assumed, \code{n.supp=-1}.
+#' @param radon.case How to use radon measurements if they are provided in the core's .csv file. 0 = do not use radon (e.g., if not measured), 1 = assume constant radon, 2 = assume varying radon and use the radon measurements as individual estimates of supported Pb-210.
 #' @param Bqkg This variable indicates whether total $^{210}Pb$ is expressed in Bq/kg (default; \code{Bqkg=TRUE}) or dpm/g if set to FALSE.
 #' @param seed Seed used for C++ executions; if it is not assigned then the seed is set by system. Default \code{seed=NA}.
 #' @param prob Confidence interval to report. This should lie between 0 and 1, default \code{prob=0.95} (95 \%).
@@ -95,15 +104,15 @@ NULL
 #' @param hiatus.max The prior for the maximum length of the hiatus. Hiatus length is a uniform distribution, with equal probabilities between 0 and \code{hiatus.max} yr (or whatever other \code{age.unit} is chosen).
 #' @param add Add a value to the maximum hiatus length if a boundary is chosen. Defaults to 100 yr (or whatever other age unit is chosen). Can be adapted if Plum complains that the parameters are out of support.
 #' @param after Sets a short section above and below hiatus.depths within which to calculate ages. For internal calculations - do not change.
-#' @param cc Calibration curve for C-14 dates: \code{cc=1} for IntCal13 (northern hemisphere terrestrial), \code{cc=2} for Marine13 (marine),
-#' \code{cc=3} for SHCal13 (southern hemisphere terrestrial). For dates that are already on the cal BP scale use \code{cc=0}.
-#' @param cc1 For northern hemisphere terrestrial 14C dates (IntCal13).
-#' @param cc2 For marine 14C dates (Marine13).
-#' @param cc3 For southern hemisphere 14C dates (SHCal13).
+#' @param cc Calibration curve for C-14 dates: \code{cc=1} for IntCal20 (northern hemisphere terrestrial), \code{cc=2} for Marine20 (marine),
+#' \code{cc=3} for SHCal20 (southern hemisphere terrestrial). For dates that are already on the cal BP scale use \code{cc=0}.
+#' @param cc1 For northern hemisphere terrestrial 14C dates (IntCal20).
+#' @param cc2 For marine 14C dates (Marine20).
+#' @param cc3 For southern hemisphere 14C dates (SHCal20).
 #' @param cc4 Use an alternative curve (3 columns: cal BP, 14C age, error, separated by white spaces and saved as a plain-text file). See \code{ccdir}.
 #' @param ccdir Directory where the calibration curves for C14 dates \code{cc} are located. By default \code{ccdir=""} since they are loaded into R's memory.
 #' For example, use \code{ccdir="."} to choose current working directory, or \code{ccdir="Curves/"} to choose sub-folder \code{Curves/}. Note that all calibration curves should reside in the same directory. If you want to add a custom-built curve, put it in the directory where the default calibration curves are (probably \code{list.files(paste0(.libPaths(), "/rplum/extdata/Curves/"))}).
-#' Alternatively produce a new folder, and add your curve as well as the default calibration curves there (cc1, cc2 and cc3; e.g., \code{write.table(copyCalibrationCurve(1), "./3Col_intcal13.14C", sep="\t")}.)
+#' Alternatively produce a new folder, and add your curve as well as the default calibration curves there (cc1, cc2 and cc3; e.g., \code{write.table(copyCalibrationCurve(1), "./3Col_intcal20.14C", sep="\t")}.)
 #' @param postbomb Use a postbomb curve for negative (i.e. postbomb) 14C ages. \code{0 = none, 1 = NH1, 2 = NH2, 3 = NH3, 4 = SH1-2, 5 = SH3}
 #' @param delta.R Mean of core-wide age offsets (e.g., regional marine offsets).
 #' @param delta.STD Error of core-wide age offsets (e.g., regional marine offsets).
@@ -117,7 +126,7 @@ NULL
 #' For symmetry reasons, t.a must always be equal to t.b-1.
 #' @param normal By default, Plum uses the student's t-distribution to treat the dates. Use \code{normal=TRUE} to use the normal/Gaussian distribution. This will generally give higher weight to the dates.
 #' @param suggest If initial analysis of the data indicates abnormally slow or fast accumulation rates, Plum will suggest to change the prior.
-#'  Also, if the length of the core would cause too few or too many sections with the default settings, Plum will suggest an alternative section thickness \code{thick}.
+#'  Also, if the length of the core would cause too few or too many sections with the default settings, Plum will suggest an alternative section thickness \code{thick}, and it will suggest approaches to estimating supported Pb-120. 
 #'  Accept these suggested alternative settings by typing "y" (or "yes please" if you prefer to be polite), or leave as is by typing "n" (or anything else, really). To get rid of these suggestions, use \code{suggest=FALSE}.
 #' @param reswarn Plum will warn you if the number of sections lies outside the safe range (default between 10 and 200 sections;
 #' \code{reswarn=c(10,200)}). Too few sections could lead to an `elbowy' model while with too many sections the modelling process can get lost,
@@ -150,7 +159,7 @@ NULL
 #' @return An age-depth model graph, its age estimates, and a summary.
 #' @examples
 #' \donttest{
-#'   Plum(ask=FALSE, coredir=tempfile())
+#'   Plum(ask=FALSE, coredir=tempfile(), date.sample=2018.5, radon.case=0, n.supp=3)
 #' }
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
@@ -161,15 +170,11 @@ NULL
 #'
 #' Christen, J.A., Perez E., S., 2010. A new robust statistical model for radiocarbon data. Radiocarbon 51, 1047-1059.
 #'
-#' Reimer, P.J., Bard, E., Bayliss, A., Beck, J.W., Blackwell, P.G., Bronk Ramsey, C., Buck, C.E., Edwards,
-#' R.L., Friedrich, M., Grootes, P.M., Guilderson, T.P., Haflidason, H., Hajdas, I., Hatte, C., Heaton, T.J.,
-#' Hoffmann, D.L., Hogg, A.G., Hughen, K.A., Kaiser, K.F., Kromer, B., Manning, S.W., Niu, M., Reimer, R.W.,
-#' Richards, D.A., Scott, M.E., Southon, J.R., Turney, C.S.M., van der Plicht, J., 2013. IntCal13 and
-#' Marine13 radiocarbon age calibration curves 0-50,000 yr cal BP. Radiocarbon 55(4), 1869-1887
+#' Reimer et al., 2020. The IntCal20 Northern Hemisphere radiocarbon age calibration curve (0–55 cal kBP). Radiocarbon 62. doi: 10.1017/RDC.2020.41
 #'
-#' Hogg, A.G., Hua, Q., Blackwell, P.G., Buck, C.E., Guilderson, T.P., Heaton, T.J., Niu, M., Palmer, J.,
-#' Reimer, P.J., Reimer, R., Turney, C.S.M., Zimmerman, S.R.H., 2013. ShCal13 Southern Hemisphere
-#' calibration, 0-50,000 cal yr BP. Radiocarbon 55(4), <doi:10.2458/azu_js_rc.55.16783>.
+#' Hogg et al. 2020 SHCal20 Southern Hemisphere calibration, 0-55,000 years cal BP. Radiocarbon 62. doi: 10.1017/RDC.2020.59
+#'
+#' Hughen et al. 2020 Marine20-the marine radiocarbon age calibration curve (0-55,000 cal BP). Radiocarbon 62. doi: 10.1017/RDC.2020.68.
 #'
 #' Hua, Q., Barbetti, M., Rakowski, A.Z., 2013. Atmospheric radiocarbon for the period 1950-2010.
 #' Radiocarbon 55(4), <doi:10.2458/azu_js_rc.v55i2.16177>.
@@ -179,8 +184,7 @@ NULL
 #' Journal of Ecology 77: 1-23.
 #'
 #' @export
-Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", n.supp = -1, phi.shape = 2, phi.mean = 50, s.shape = 5, s.mean = 10, Al = 0.1, date.sample = NA, Bqkg = TRUE, seed = NA,
-prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit="cm", age.unit="yr", unit=depth.unit, acc.shape=1.5, acc.mean=10, mem.strength=4, mem.mean=0.7, boundary=NA, hiatus.depths=NA, hiatus.max=10000, add=c(), after=.0001/thick, cc=1, cc1="IntCal13", cc2="Marine13", cc3="SHCal13", cc4="ConstCal", ccdir="", postbomb=0, delta.R=1, delta.STD=0, t.a=3, t.b=4, normal=FALSE, suggest=TRUE, reswarn=c(10,200), remember=TRUE, ask=TRUE, run=TRUE, defaults="defaultPlum_settings.txt", sep=",", dec=".", runname="", slump=c(), BCAD=FALSE, ssize=2000, th0=c(), burnin=min(1500, ssize), MinAge=c(), MaxAge=c(), cutoff=.001, plot.pdf=TRUE, dark=1, date.res=100, age.res=200, close.connections=TRUE, verbose=TRUE, ...) {
+Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape = 2, phi.mean = 50, s.shape = 5, s.mean = 10, Al = 0.1, date.sample = c(), n.supp = c(), radon.case=c(), Bqkg = TRUE, seed = NA, prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit="cm", age.unit="yr", unit=depth.unit, acc.shape=1.5, acc.mean=10, mem.strength=4, mem.mean=0.7, boundary=NA, hiatus.depths=NA, hiatus.max=10000, add=c(), after=.0001/thick, cc=1, cc1="IntCal20", cc2="Marine20", cc3="SHCal20", cc4="ConstCal", ccdir="", postbomb=0, delta.R=1, delta.STD=0, t.a=3, t.b=4, normal=FALSE, suggest=TRUE, reswarn=c(10,200), remember=TRUE, ask=TRUE, run=TRUE, defaults="defaultPlum_settings.txt", sep=",", dec=".", runname="", slump=c(), BCAD=FALSE, ssize=2000, th0=c(), burnin=min(1500, ssize), MinAge=c(), MaxAge=c(), cutoff=.001, plot.pdf=TRUE, dark=1, date.res=100, age.res=200, close.connections=TRUE, verbose=TRUE, ...) {
   # Check coredir and if required, copy example file in core directory
   coredir <- assign_coredir(coredir, core, ask)
   if(core == "HP1C" || core == "SIM") {
@@ -197,23 +201,23 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
   # default_settings.txt is located within system.file
   defaults <- system.file("extdata", defaults, package=packageName())
   # read in the data, adapt settings from defaults if needed
-  tmp <- .read.dets.plum(core, coredir, n.supp, date.sample, sep=sep, dec=dec, cc=cc, Bqkg=Bqkg)
+  tmp <- .read.dets.plum(core=core, coredir=coredir, n.supp=n.supp, date.sample=date.sample, sep=sep, dec=dec, cc=cc, Bqkg=Bqkg, radon.case=radon.case, suggest=suggest)
 
   dets = tmp[[1]]
   supportedData = tmp[[2]]
-  radonCase = tmp[[3]]
+  radon.case = tmp[[3]]
   date.sample = tmp[[4]]
   detsOrig = tmp[[5]]
   n.supp = tmp[[6]]
 
-  if(is.na(date.sample)) {
-    ans <- readline("Please provide a date (in AD) for the sample: ")
+#  if(is.na(date.sample)) {
+#    ans <- readline("Please provide a date (in AD) for the sample: ")
 
-    if( grepl("^[0-9.][0-9]*[.]?[0-9]*[0-9.]$",ans) == FALSE ) 
-      if( grepl("^[0-9]+$", ans) == FALSE )
-        stop("The date must be a numeric value", call.=FALSE)
-    date.sample = as.numeric(ans)
-  }
+#    if( grepl("^[0-9.][0-9]*[.]?[0-9]*[0-9.]$",ans) == FALSE ) 
+#      if( grepl("^[0-9]+$", ans) == FALSE )
+#        stop("The date must be a numeric value", call.=FALSE)
+#    date.sample = as.numeric(ans)
+#  }
   theta0 = 1950 - date.sample
 
   # use the correct radiometric units 
@@ -289,6 +293,7 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
       acc.mean <- rep(acc.mean, length(hiatus.depths)+1)
   }
 
+  
   info <- .plum.settings(core=core, coredir=coredir, dets=dets, thick=thick, remember=remember,
     d.min=d.min, d.max=d.max, d.by=d.by, depths.file=depths.file, slump=slump, acc.mean=acc.mean,
     acc.shape=acc.shape, mem.mean=mem.mean, mem.strength=mem.strength, boundary=boundary,
@@ -297,7 +302,7 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
     delta.R=delta.R, delta.STD=delta.STD, prob=prob, defaults=defaults, runname=runname, ssize=ssize,
     dark=dark, MinAge=MinAge, MaxAge=MaxAge, cutoff=cutoff, age.res=age.res, after=after,
     age.unit=age.unit, supportedData=supportedData, date.sample=date.sample, Al=Al, phi.shape=phi.shape,
-    phi.mean=phi.mean, s.shape=s.shape, s.mean=s.mean, radonCase=radonCase, Bqkg=Bqkg, n.supp=n.supp)
+    phi.mean=phi.mean, s.shape=s.shape, s.mean=s.mean, radon.case=radon.case, Bqkg=Bqkg, n.supp=n.supp)
 
   .assign_to_global("info", info)
 
@@ -332,14 +337,18 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
       ncol(info$detsBacon)>4 && max(info$detsBacon[,5]) > 0 && min(info$detsBacon[info$detsBacon[,5] > 0,2]) < 0))
         stop("you have negative C14 ages so should select a postbomb curve", call.=FALSE)
 
-  info$calib <- .plum.calib(dets, info, date.res, ccdir=ccdir)
+  if(info$hasBaconData) { # only calibrate radiocarbon dates. Try July 2020
+   info$calib <- .plum.calib(dets[which(dets[,9] < 5),], info, date.res, ccdir=ccdir)
+  } 
 
-  ### find some relevant values
+### find some relevant values
   info$rng <- c()
-  for(i in 1:length(info$calib$probs)) {
-    tmp <- info$calib$probs[[i]]
-    info$rng <- range(info$rng, tmp[which(tmp[,2]>cutoff),1])
-  }
+  if(info$hasBaconData) # July 2020, to get rid of Warning regarding min(na.rm=na.rm)
+    for(i in 1:length(info$calib$probs)) {
+      tmp <- info$calib$probs[[i]]
+      info$rng <- range(info$rng, tmp[which(tmp[,2]>cutoff),1])
+    }
+
   if(length(th0)==0) # provide two ball-park/initial age estimates
     info$th0 <- c(theta0-.01, theta0+.01)
   info$th0[info$th0 < info$MinAge] <- info$MinAge # otherwise twalk will not start
@@ -412,13 +421,13 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
     info$slump <- slump
 
     slumpdmax <- toslump(ceiling(info$d.max), slump)
-	info$elbows <- seq(floor(info$d.min), slumpdmax, by=thick)
+    info$elbows <- seq(floor(info$d.min), slumpdmax, by=thick)
     info$K <- length(info$elbows)
     info$cK <- info$d.min+(info$thick*info$K) # the maximum depth to be used by the bacon model
 
-	info$slumpfree <- toslump(depths, slump)
+    info$slumpfree <- toslump(depths, slump)
     info$slumphiatus <- toslump(info$hiatus.depths, slump) # check
-	if(!is.na(info$boundary[1])) {
+    if(!is.na(info$boundary[1])) {
       info$slumpboundary <- toslump(info$boundary, slump) # check
       info$slumphiatus <- info$slumpboundary
     }
@@ -427,6 +436,7 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
     info$slumpdets <- slumpdets[!is.na(slumpdets[,4]),]
   }
 
+ 
   ### produce files
   info$prefix <- paste(coredir, core, "/", core, runname, "_", info$K, sep="")
   info$coredir <- coredir
@@ -491,6 +501,7 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
     legend("top", core, bty="n", cex=1.5)
   }
 
+  
   cook <- function() {
     txt <- paste(info$prefix, ".bacon", sep="")
     bacon(txt, outfile, ssize, ccdir)
@@ -522,8 +533,11 @@ prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit=
           ans <- tolower(substr(ans,1,1))[1]
           if(ans=="y" || ans=="")
             cook() else
-              message("  OK. Please adapt settings.\n\n")
+              message("  OK. Please adapt settings.\n")
         }
+
+
+
   if(close.connections)
     closeAllConnections()
 }

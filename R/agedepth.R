@@ -27,7 +27,7 @@
 #' @param hiatus.option How to calculate accumulation rates and ages for sections with hiatuses. Either extrapolate from surrounding sections (default, \code{hiatus.option=1}), use a w-weighted mix between the prior and posterior values for depths below the hiatus and prior information only for above the hiatus (\code{hiatus.option=2}), or use the originally calculated slopes (\code{hiatus.option=0}).
 #' @param dark Darkness of the greyscale age-depth model. By default, the darkest grey value is calculated as 10 times the height of the lowest-precision age estimate \code{dark=c()}. Lower values will result in lighter grey but values >1 are not allowed.
 #' @param prob Confidence interval to report (between 0 and 1, default 0.95 or 95\%).
-#' @param rounded Rounding of years. Default is to round to 1 digit, \code{rounded=1}.
+#' @param rounded Rounding of years. Default is to round to single years.
 #' @param d.res Resolution or amount of greyscale pixels to cover the depth scale of the age-model plot. Default \code{d.res=200}.
 #' @param age.res Resolution or amount of greyscale pixels to cover the age scale of the age-model plot. Default \code{yr.res=200}.
 #' @param yr.res Deprecated - use age.res instead.
@@ -61,14 +61,14 @@
 #' @param dates.col As an alternative to colouring dates based on whether they are 14C or not, sets of dates can be coloured as, e.g., \code{dates.col=colours()[2:100]}.
 #' @param pbmodelled.col Colour of the modelled 210Pb values. Defaults to shades of blue: \code{pbmodelled.col=function(x) rgb(0,0,1,x)}.
 #' @param pbmeasured.col Colour of the measured 210Pb values (default \code{pbmeasured.col="blue"}). Draws rectangles of the upper and lower depths as well as the Pb values with 95 percent error ranges. 
-#' @param pb.lim Limits of the 210Pb axis, if relevant. Calculated automatically by default, assuming no values can go below 0.
+#' @param pb.lim Axis limits for the Pb-210 data. Calculated automatically by default (\code{pblim=c()}).
 #' @param hiatus.col The colour of the depths of any hiatuses. Default \code{hiatus.col=grey(0.5)}.
 #' @param hiatus.lty The line type of the depths of any hiatuses. Default \code{hiatus.lty=12}.
 #' @param greyscale The function to produce a coloured representation of all age-models. Defaults to grey-scales: \code{greyscale=function(x) grey(1-x)}.
 #' @param slump.col Colour of slumps. Defaults to \code{slump.col=grey(0.8)}.
 #' @param normalise.dists By default, the distributions of more precise dates will cover less time and will thus peak higher than less precise dates. This can be avoided by specifying \code{normalise.dists=FALSE}.
 #' @param same.heights Plot the distributions of the dates all at the same maximum height (default \code{same.height=FALSE}).
-#' @param cc Calibration curve for 14C dates: \code{cc=1} for IntCal13 (northern hemisphere terrestrial), \code{cc=2} for Marine13 (marine), \code{cc=3} for SHCal13 (southern hemisphere terrestrial). For dates that are already on the cal BP scale use \code{cc=0}.
+#' @param cc Calibration curve for 14C dates: \code{cc=1} for IntCal20 (northern hemisphere terrestrial), \code{cc=2} for Marine20 (marine), \code{cc=3} for SHCal20 (southern hemisphere terrestrial). For dates that are already on the cal BP scale use \code{cc=0}.
 #' @param title The title of the age-depth model is plotted on the main panel. By default this is the core's name. To leave empty: \code{title=""}.
 #' @param title.location Location of the title. Default \code{title.location='top'}.
 #' @param after Sets a short section above and below hiatus.depths within which to calculate ages. For internal calculations - do not change.
@@ -87,12 +87,9 @@
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A plot of the age-depth model, and estimated ages incl. confidence ranges for each depth.
 #' @examples
-#' \dontshow{
-#'   Plum(run=FALSE, ask=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50, d.res=50, d.by=10)
-#'  }
 #' \donttest{
-#'   Plum(ask=FALSE, coredir=tempfile())
+#'   Plum(ssize=100, ask=FALSE, suggest=FALSE, coredir=tempfile(), 
+#'     date.sample=2018.5, radon.case=0, n.supp=3)
 #'   agedepth()
 #' }
 #' @references
@@ -100,7 +97,7 @@
 #' gamma process. Bayesian Analysis 6 (2011), no. 3, 457--474.
 #' \url{https://projecteuclid.org/euclid.ba/1339616472}
 #' @export
-agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="yr", unit=depth.unit, d.lab=c(), age.lab=c(), yr.lab=age.lab, kcal=FALSE, acc.lab=c(), d.min=c(), d.max=c(), d.by=c(), depths=set$depths, depths.file=FALSE, age.min=c(), yr.min=age.min, age.max=c(), yr.max=age.max, hiatus.option=1, dark=c(), prob=set$prob, rounded=1, d.res=400, age.res=400, yr.res=age.res, date.res=100, grey.res=100, rotate.axes=FALSE, rev.age=FALSE, rev.yr=rev.age, rev.d=FALSE, maxcalc=500, height=15, calheight=1, mirror=TRUE, up=TRUE, cutoff=.001, plot.range=TRUE, panels=layout(1), range.col=grey(.5), range.lty="12", mn.col="red", mn.lty="12", med.col=NA, med.lty="12", C14.col=rgb(0,0,1,.35), C14.border=rgb(0,0,1,.5), cal.col=rgb(0,.5,.5,.35), cal.border=rgb(0,.5,.5,.5), dates.col=c(), pbmodelled.col=function(x) rgb(0,0,1,.5*x), pbmeasured.col="blue", pb.lim=c(), hiatus.col=grey(0.5), hiatus.lty="12", greyscale=grey(seq(1,0, length=grey.res)), slump.col=grey(0.8), normalise.dists=TRUE, same.heights=FALSE, cc=set$cc, title=set$core, title.location="top", after=set$after, bty="l", mar=c(3,3,1,1), mgp=c(1.5,.7,.0), xaxs="r", yaxs="i", xaxt="s", yaxt="s", plot.pb=TRUE, plot.pdf=FALSE, dates.only=FALSE, model.only=FALSE, verbose=TRUE) {
+agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="yr", unit=depth.unit, d.lab=c(), age.lab=c(), yr.lab=age.lab, kcal=FALSE, acc.lab=c(), d.min=c(), d.max=c(), d.by=c(), depths=set$depths, depths.file=FALSE, age.min=c(), yr.min=age.min, age.max=c(), yr.max=age.max, hiatus.option=1, dark=c(), prob=set$prob, rounded=0, d.res=400, age.res=400, yr.res=age.res, date.res=100, grey.res=100, rotate.axes=FALSE, rev.age=FALSE, rev.yr=rev.age, rev.d=FALSE, maxcalc=500, height=15, calheight=1, mirror=TRUE, up=TRUE, cutoff=.001, plot.range=TRUE, panels=layout(1), range.col=grey(.5), range.lty="12", mn.col="red", mn.lty="12", med.col=NA, med.lty="12", C14.col=rgb(0,0,1,.35), C14.border=rgb(0,0,1,.5), cal.col=rgb(0,.5,.5,.35), cal.border=rgb(0,.5,.5,.5), dates.col=c(), pbmodelled.col=function(x) rgb(0,0,1,.5*x), pbmeasured.col="blue", pb.lim=c(), hiatus.col=grey(0.5), hiatus.lty="12", greyscale=grey(seq(1,0, length=grey.res)), slump.col=grey(0.8), normalise.dists=TRUE, same.heights=FALSE, cc=set$cc, title=set$core, title.location="top", after=set$after, bty="l", mar=c(3,3,1,1), mgp=c(1.5,.7,.0), xaxs="r", yaxs="i", xaxt="s", yaxt="s", plot.pb=TRUE, plot.pdf=FALSE, dates.only=FALSE, model.only=FALSE, verbose=TRUE) {
 # Load the output, if it exists
   outp <- paste0(set$prefix, ".out")
   if(file.exists(outp))
@@ -112,6 +109,11 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
     if(file.exists(outPlum))
       set <- .Plum.AnaOut(outPlum, set)
   }
+
+  # sometimes runs don't go well, with the age-model totally lost. This is indicated by a very peaked posterior for memory, very close to 1
+  if(min(set$output[,ncol(set$output)]) > 0.99)
+    message("\nWarning, this run has a very high posterior memory and probably didn't go very well. Please run again\n")
+
 
   # Adapt ages of sections which contain hiatuses
   if(!is.na(set$hiatus.depths[1]))
@@ -130,7 +132,7 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
       .PlotLogPost(set, 0, set$Tr, xaxs=xaxs, yaxs=yaxs) # convergence information
       oldpar <- par(mar=c(3,0,1,.5)) # reduce white space
       on.exit(par(oldpar))         	
-      .PlotAccPost(set, depth.unit=unit, age.unit=age.unit, xaxs=xaxs, yaxs=yaxs)
+      .PlotAccPost(set, depth.unit=depth.unit, age.unit=age.unit, xaxs=xaxs, yaxs=yaxs)
       .PlotMemPost(set, set$core, set$K, "", set$mem.strength, set$mem.mean, ds=1, thick=set$thick, xaxs=xaxs, yaxs=yaxs)
       if(!is.na(set$hiatus.depths[1]))
         if(is.na(set$boundary[1]))
@@ -169,25 +171,27 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
     d <- sort(unique(c(i+after, i, d)))
 
   if(verbose)
-    message("Calculating age ranges...\n")
+    message("Calculating age ranges...")
   modelranges <- c()
   ranges <- Bacon.rng(d, set, BCAD=BCAD, prob=prob)
   
   # calculate calendar axis limits
   modelranges <- range(ranges[!is.na(ranges)])
-  dates <- set$calib$probs
   dateranges <- c()
-  for(i in 1:length(dates))
-    if(BCAD)
-      dateranges <- range(dateranges, 1950-dates[[i]][,1]) else
-        dateranges <- range(dateranges, dates[[i]][,1])
+  if(set$hasBaconData) {
+    dates <- set$calib$probs
+    for(i in 1:length(dates))
+      if(BCAD)
+        dateranges <- range(dateranges, 1950-dates[[i]][,1]) else
+          dateranges <- range(dateranges, dates[[i]][,1])
+  } else dateranges <- modelranges
   if(length(age.min) == 0)
-    age.min <- min(modelranges, dateranges)
+    age.min <- min(modelranges, dateranges, na.rm=TRUE)
   if(length(age.max) == 0)
-    age.max <- max(modelranges, dateranges)
+    age.max <- max(modelranges, dateranges, na.rm=TRUE)
 
   if(set$isplum) 
-    age.lim <- extendrange(c(min(ranges), max(ranges)), f=0.01) else
+    age.lim <- extendrange(c(min(ranges, age.min), max(ranges, age.max)), f=0.01) else
       age.lim <- extendrange(c(age.min, age.max), f=0.01)
 
   if(BCAD)
@@ -206,7 +210,9 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
   if(kcal)
     ifelse(rotate.axes, xaxt <- "n", yaxt <- "n")
   if(set$isplum) {
-     oldpar <- par(mar=c(3,3,1,3)) # to make space for righthand Pb axis
+    if(rotate.axes)
+      oldpar <- par(mar=c(3,3,3,1)) else # to make space for Pb axis
+        oldpar <- par(mar=c(3,3,1,3)) 
       on.exit(par(oldpar))         	
   } else {
       oldpar <- par(mar=c(3,3,1,1)) # no need for righthand axis
@@ -222,7 +228,7 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
   if(!dates.only) {
     if(verbose)
       message("Preparing ghost graph... ")
-    .agedepth.ghost(set, rotate.axes=rotate.axes, rev.d=rev.d, BCAD=BCAD, d.res=d.res, age.res=age.res, grey.res=grey.res, dark=dark, colours=greyscale, age.lim=age.lim)
+    .agedepth.ghost(set, rotate.axes=rotate.axes, BCAD=BCAD, d.res=d.res, age.res=age.res, grey.res=grey.res, dark=dark, colours=greyscale, age.lim=age.lim)
   }
 
   if(length(set$slump) > 0 )
@@ -230,13 +236,14 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
       if(rotate.axes)
         rect(min(age.lim)-1e3, set$slump[i,1], max(age.lim)+1e3, set$slump[i,2], col=slump.col, border=slump.col) else
           rect(set$slump[i,1], min(age.lim)-1e3, set$slump[i,2], max(age.lim)+1e3, col=slump.col, border=slump.col)
-
+  
   if(!set$isplum)
     calib.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, normalise.dists=normalise.dists, same.heights=same.heights) else {
       if(set$hasBaconData)
-        calib.plumbacon.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col,  new.plot=FALSE, normalise.dists=normalise.dists, same.heights=same.heights)
+          calib.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, normalise.dists=normalise.dists, same.heights=same.heights)
+#        calib.plumbacon.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col,  new.plot=FALSE, normalise.dists=normalise.dists, same.heights=same.heights)
       if(plot.pb) 
-        draw.pbmodelled(set, BCAD=BCAD, rotate.axes=rotate.axes, age.lim=age.lim, d.lim=d.lim, pbmodelled.col=pbmodelled.col, pbmeasured.col=pbmeasured.col, pb.lim=pb.lim)
+        draw.pbmodelled(set, BCAD=BCAD, rotate.axes=rotate.axes, age.lim=sort(age.lim), d.lim=d.lim, pbmodelled.col=pbmodelled.col, pbmeasured.col=pbmeasured.col, pb.lim=pb.lim)
   }
 
   legend(title.location, title, bty="n", cex=1.5)
@@ -299,6 +306,6 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit="cm", age.unit="
         min(rng), " ", min.rng, ", max. ", max(rng), " ", max.rng)
     if(!set$isplum) # but needs some statement also for 210Pb dates!
       overlap()
-    message("\n")  
+  #  message("\n")  
   }  
 }

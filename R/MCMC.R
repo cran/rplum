@@ -16,18 +16,6 @@
 #' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return NA
-#' @examples
-#' \dontshow{
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   scissors(100)
-#'   agedepth(d.res=50, age.res=50, d.by=10)
-#' }
-#' \donttest{
-#'   Plum(ask=FALSE, coredir=tempfile())
-#'   scissors(100)
-#'   agedepth()
-#' }
-#'
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -106,18 +94,6 @@ scissors.plum <- function(burnin, set=get('info')) {
 #' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return NA
-#' @examples
-#' \dontshow{
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   thinner(.1)
-#'   agedepth(d.res=50, age.res=50, d.by=10)
-#' }
-#' \donttest{
-#'   Plum(ask=FALSE, coredir=tempfile())
-#'   thinner(.2)
-#'   agedepth()
-#' }
-#'
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -194,8 +170,8 @@ Baconvergence <- function(core="MSB2K", runs=5, suggest=FALSE, verbose=TRUE, ...
 
   rt <- gelman.diag(mcmc.list(lapply(MCMC, as.mcmc)), autoburnin=FALSE, transform=TRUE, confidence=0.97)
   if(verbose) {
-    message("Did", runs, "Bacon runs.")
-    message("Gelman and Rubin Reduction Factor", rt$mpsrf, " (smaller and closer to 1 is better).")
+    message("Did ", runs, " Bacon runs.")
+    message("Gelman and Rubin Reduction Factor ", rt$mpsrf, " (smaller and closer to 1 is better).")
     if(rt$mpsrf > 1.05)
       message("Probably not a robust MCMC run! Too much difference between runs, above the 1.05 threshold. Increase sample size?\n") else
         message("Robust MCMC mixing, below the 1.05 safety threshold.\n")
@@ -219,9 +195,6 @@ overlap <- function(set=get('info'), digits=0, verbose=TRUE) {
         inside[i] <- 0
   }
   inside <- 100*sum(inside)/length(d)
-  if(verbose) {
-    if(inside < 80)
-      message("Warning! Only ")
-    message(round(inside, digits), "% of the dates overlap with the age-depth model (", 100*set$prob, "% ranges)")
-  }
+  if(verbose) 
+    message(if(inside < 80) "Warning! Only ", round(inside, digits), "% of the dates overlap with the age-depth model (", 100*set$prob, "% ranges)")
 }

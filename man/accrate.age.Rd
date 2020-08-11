@@ -28,13 +28,6 @@ Bacon deals explicitly with accumulation rate and its variability through defini
 This function obtains accumulation rates (in years per cm, so actually sedimentation times) as estimated
 by the MCMC iterations for any age of a core. Deals with only 1 age at a time. See also \code{accrate.depth}.
 }
-\examples{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(yr.res=50, d.res=50, d.by=10)
-  accrate.a50 = accrate.age(50)
-  plot(accrate.a50, pch='.')
-  hist(accrate.a50)
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

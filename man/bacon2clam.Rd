@@ -24,15 +24,6 @@ Reads a Bacon .csv file containing the dates, and transforms it into a clam .csv
 \details{
 Assumes that Bacon .csv files with 4 columns indicate 14C dates. Please make sure this is correct.
 }
-\examples{
-{
-\donttest{
- tmpfl <- tempfile()
-  Bacon(run=FALSE, ask=FALSE, coredir=tmpfl)
-  bacon2clam("MSB2K", bacondir=tmpfl, clamdir=tmpfl)
- }
-}
-}
 \seealso{
 \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 }

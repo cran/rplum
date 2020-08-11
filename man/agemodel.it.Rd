@@ -19,11 +19,6 @@ A variable with two columns - depth and the age-depth model of a single iteratio
 \description{
 For one MCMC iteration (it), extract the corresponding age-depth model.
 }
-\examples{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(age.res=50, d.res=50, d.by=10)
-  lines(agemodel.it(5), col="red")
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

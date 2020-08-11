@@ -18,10 +18,6 @@ Lists all folders located within the core's directory.
 \details{
 The directory is either "Plum_runs", "Cores" or a custom-named one.
 }
-\examples{
-  Bacon(run=FALSE, coredir=tempfile())
-  Plum_runs()
-}
 \seealso{
 \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 }

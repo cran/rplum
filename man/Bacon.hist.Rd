@@ -66,12 +66,6 @@ Calculate the distribution of age estimates of single or multiple depths.
 \details{
 Age estimates of specific depths can also be plotted.
 }
-\examples{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(age.res=50, d.res=50, d.by=10)
-  Bacon.hist(20)
-  Bacon.hist(20:30)
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

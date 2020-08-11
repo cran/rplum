@@ -77,13 +77,6 @@ produce a file with two columns (depth and corresponding proxy-derived probabili
 
 does not yet deal correctly with hiatuses.
 }
-\examples{
-\donttest{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(yr.res=50)
-  AgesOfEvents(10, 1)
-}
-}
 \references{
 Blaauw, M., Christen, J.A., Mauquoy, D., van der Plicht, J., Bennett, K.D. (2007) Testing the timing of radiocarbon-dated events between proxy archives. _The Holocene_, *17*, 283-288.
 Blaauw, M., Wohlfarth, B., Christen, J.A., Ampel, L., Veres, D., Hughen, K.A., Preusser, F., Svensson, A. (2010) Were last glacial climate events simultaneous between Greenland and France? A quantitative comparison using non-tuned chronologies. _Journal of Quaternary Science_ *25*, 387-394.

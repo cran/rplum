@@ -27,7 +27,7 @@ agedepth(
   hiatus.option = 1,
   dark = c(),
   prob = set$prob,
-  rounded = 1,
+  rounded = 0,
   d.res = 400,
   age.res = 400,
   yr.res = age.res,
@@ -131,7 +131,7 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{prob}{Confidence interval to report (between 0 and 1, default 0.95 or 95\%).}
 
-\item{rounded}{Rounding of years. Default is to round to 1 digit, \code{rounded=1}.}
+\item{rounded}{Rounding of years. Default is to round to single years.}
 
 \item{d.res}{Resolution or amount of greyscale pixels to cover the depth scale of the age-model plot. Default \code{d.res=200}.}
 
@@ -193,7 +193,7 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{pbmeasured.col}{Colour of the measured 210Pb values (default \code{pbmeasured.col="blue"}). Draws rectangles of the upper and lower depths as well as the Pb values with 95 percent error ranges.}
 
-\item{pb.lim}{Limits of the 210Pb axis, if relevant. Calculated automatically by default, assuming no values can go below 0.}
+\item{pb.lim}{Axis limits for the Pb-210 data. Calculated automatically by default (\code{pblim=c()}).}
 
 \item{hiatus.col}{The colour of the depths of any hiatuses. Default \code{hiatus.col=grey(0.5)}.}
 
@@ -207,7 +207,7 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{same.heights}{Plot the distributions of the dates all at the same maximum height (default \code{same.height=FALSE}).}
 
-\item{cc}{Calibration curve for 14C dates: \code{cc=1} for IntCal13 (northern hemisphere terrestrial), \code{cc=2} for Marine13 (marine), \code{cc=3} for SHCal13 (southern hemisphere terrestrial). For dates that are already on the cal BP scale use \code{cc=0}.}
+\item{cc}{Calibration curve for 14C dates: \code{cc=1} for IntCal20 (northern hemisphere terrestrial), \code{cc=2} for Marine20 (marine), \code{cc=3} for SHCal20 (southern hemisphere terrestrial). For dates that are already on the cal BP scale use \code{cc=0}.}
 
 \item{title}{The title of the age-depth model is plotted on the main panel. By default this is the core's name. To leave empty: \code{title=""}.}
 
@@ -250,12 +250,9 @@ After loading a previous run, or after running either the \link{scissors} or \li
 again using the command \code{agedepth()}.
 }
 \examples{
-\dontshow{
-  Plum(run=FALSE, ask=FALSE, coredir=tempfile())
-  agedepth(yr.res=50, d.res=50, d.by=10)
- }
 \donttest{
-  Plum(ask=FALSE, coredir=tempfile())
+  Plum(ssize=100, ask=FALSE, suggest=FALSE, coredir=tempfile(), 
+    date.sample=2018.5, radon.case=0, n.supp=3)
   agedepth()
 }
 }

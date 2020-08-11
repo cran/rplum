@@ -1,17 +1,16 @@
 ### this is a copy of an .R file of the 'rbacon' package by the same authors as those of 'rplum'. Both packages are distributed under the GPL (>= 2) license
 
+
 #' @name copyCalibrationCurve
 #' @title Copy a calibration curve.
 #' @description Copy one of the the calibration curves into memory.
 #' @details Copy the radiocarbon calibration curve defined by cc into memory.
 #' @return The calibration curve (invisible).
-#' @param cc Calibration curve for 14C dates: \code{cc=1} for IntCal13 (northern hemisphere terrestrial), \code{cc=2} for Marine13 (marine),
-#' \code{cc=3} for SHCal13 (southern hemisphere terrestrial).
+#' @param cc Calibration curve for 14C dates: \code{cc=1} for IntCal20 (northern hemisphere terrestrial), \code{cc=2} for Marine20 (marine),
+#' \code{cc=3} for SHCal20 (southern hemisphere terrestrial).
 #' @param postbomb Use \code{postbomb=TRUE} to get a postbomb calibration curve (default \code{postbbomb=FALSE}).
 #' @author Maarten Blaauw, J. Andres Christen
-#' @examples
-#' intcal13 <- copyCalibrationCurve(1)
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @export
 copyCalibrationCurve <- function(cc=1, postbomb=FALSE) {
   if(postbomb) {
@@ -22,11 +21,11 @@ copyCalibrationCurve <- function(cc=1, postbomb=FALSE) {
             if(cc==5) fl <- "postbomb_SH3.14C" else
               stop("calibration curve doesn't exist\n", call.=FALSE)
   } else
-  if(cc==1) fl <- "3Col_intcal13.14C" else
-    if(cc==2) fl <- "3Col_marine13.14C" else
-      if(cc==3) fl <- "3Col_shcal13.14C" else
+  if(cc==1) fl <- "3Col_intcal20.14C" else
+    if(cc==2) fl <- "3Col_marine20.14C" else
+      if(cc==3) fl <- "3Col_shcal20.14C" else
         stop("calibration curve doesn't exist\n", call.=FALSE)
-  cc <- system.file("extdata/Curves", fl, package='rplum')
+  cc <- system.file("extdata/Curves", fl, package='rbacon')
   cc <- read.table(cc)
   invisible(cc)
 }
@@ -39,8 +38,8 @@ copyCalibrationCurve <- function(cc=1, postbomb=FALSE) {
 #' @details The proportional contribution of each of both calibration curves has to be set.
 #'
 #' @param proportion Proportion of the first calibration curve required. e.g., change to \code{proportion=0.7} if \code{cc1} should contribute 70\% (and \code{cc2} 30\%) to the mixed curve.
-#' @param cc1 The first calibration curve to be mixed. Defaults to the northern hemisphere terrestrial curve IntCal13.
-#' @param cc2 The second calibration curve to be mixed. Defaults to the marine curve IntCal13.
+#' @param cc1 The first calibration curve to be mixed. Defaults to the northern hemisphere terrestrial curve IntCal20.
+#' @param cc2 The second calibration curve to be mixed. Defaults to the marine curve IntCal20.
 #' @param name Name of the new calibration curve.
 #' @param dirname Directory where the file will be written. If using the default \code{dirname="."},
 #' the new curve will be saved in current working directory.
@@ -48,16 +47,14 @@ copyCalibrationCurve <- function(cc=1, postbomb=FALSE) {
 #' @param sep Separator between fields (tab by default, "\\t")
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A file containing the custom-made calibration curve, based on calibration curves \code{cc1} and \code{cc2}.
-#' @examples
-#' mix.curves(, dirname=tempdir())
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
 #' \url{https://projecteuclid.org/euclid.ba/1339616472}
 #' @export
-mix.curves <- function(proportion=.5, cc1="3Col_intcal13.14C", cc2="3Col_marine13.14C", name="mixed.14C", dirname=".", offset=c(0,0), sep="\t") {
-  ccloc <- paste0(system.file("extdata", package='rplum'), "/Curves/")
+mix.curves <- function(proportion=.5, cc1="3Col_intcal20.14C", cc2="3Col_marine20.14C", name="mixed.14C", dirname=".", offset=c(0,0), sep="\t") {
+  ccloc <- paste0(system.file("extdata", package='rbacon'), "/Curves/")
   dirname <- .validateDirectoryName(dirname)
 
   cc1 <- read.table(paste(ccloc, cc1,  sep=""))
@@ -87,7 +84,7 @@ mix.curves <- function(proportion=.5, cc1="3Col_intcal13.14C", cc2="3Col_marine1
 #'   pMC.age(110, 0.5) # a postbomb date, so with a negative 14C age
 #'   pMC.age(80, 0.5) # prebomb dates can also be calculated
 #'   pMC.age(.8, 0.005, 1) # pMC expressed against 1 (not against 100\%)
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
@@ -115,7 +112,7 @@ pMC.age <- function(mn, sdev, ratio=100, decimals=0) {
 #' @examples
 #'   age.pMC(-2000, 20)
 #'   age.pMC(-2000, 20, 1)
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
@@ -136,7 +133,7 @@ age.pMC <- function(mn, sdev, ratio=100, decimals=3) {
 #' @param mn Reported mean of the date. Can be multiple dates.
 #' @param sdev Reported error of the date. Can be multiple dates.
 #' @param depth Depth of the date.
-#' @param cc The calibration curve to use: \code{cc=1} for IntCal13 (northern hemisphere terrestrial), \code{cc=2} for Marine13 (marine), \code{cc=0} for none (dates that are already on the cal BP scale).
+#' @param cc The calibration curve to use: \code{cc=1} for IntCal20 (northern hemisphere terrestrial), \code{cc=2} for Marine20 (marine), \code{cc=0} for none (dates that are already on the cal BP scale).
 #' @param above Treshold for plotting of probability values. Defaults to \code{above=1e-3}.
 #' @param ex Exaggeration of probability distribution plots. Defaults to \code{ex=50}.
 #' @param normal By default, Bacon uses the student's t-distribution to treat the dates. Use \code{normal=TRUE} to use the normal/Gaussian distribution. This will generally give higher weight to the dates.
@@ -160,13 +157,7 @@ age.pMC <- function(mn, sdev, ratio=100, decimals=3) {
 #' @param pch The shape of any marker to be added to the date. Defaults to a cross, \code{pch=4}. To leave empty, use \code{pch=NA}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A date's distribution, added to an age-depth plot.
-#' @examples
-#' \donttest{
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth()
-#'   add.dates(5000, 100, 60)
-#' }
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
@@ -248,11 +239,7 @@ add.dates <- function(mn, sdev, depth, cc=1, above=1e-6, ex=10, normal=TRUE, nor
 #' @param normalise.dists By default, the distributions of more precise dates will cover less time and will thus peak higher than less precise dates. This can be avoided by specifying \code{normalise.dists=FALSE}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return NA
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   calib.plot()
-#'
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
@@ -335,14 +322,14 @@ calib.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, rotate.axes=FA
 # calibrate C14 dates and calculate distributions for any calendar dates
 .bacon.calib <- function(dat, set=get('info'), date.res=100, normal=set$normal, t.a=set$t.a, t.b=set$t.b, delta.R=set$delta.R, delta.STD=set$delta.STD, ccdir="") {
   # read in the curves
-  if(set$cc1=="IntCal13" || set$cc1=="\"IntCal13\"")
-    cc1 <- read.table(paste(ccdir, "3Col_intcal13.14C",sep="")) else
+  if(set$cc1=="IntCal20" || set$cc1=="\"IntCal20\"")
+    cc1 <- read.table(paste(ccdir, "3Col_intcal20.14C",sep="")) else
       cc1 <- read.csv(paste(ccdir, set$cc1, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
-  if(set$cc2=="Marine13" || set$cc2=="\"Marine13\"")
-    cc2 <- read.table(paste(ccdir, "3Col_marine13.14C",sep="")) else
+  if(set$cc2=="Marine20" || set$cc2=="\"Marine20\"")
+    cc2 <- read.table(paste(ccdir, "3Col_marine20.14C",sep="")) else
       cc2 <- read.csv(paste(ccdir, set$cc2, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
-  if(set$cc3=="SHCal13" || set$cc3=="\"SHCal13\"")
-    cc3 <- read.table(paste(ccdir, "3Col_shcal13.14C",sep="")) else
+  if(set$cc3=="SHCal20" || set$cc3=="\"SHCal20\"")
+    cc3 <- read.table(paste(ccdir, "3Col_shcal20.14C",sep="")) else
       cc3 <- read.csv(paste(ccdir, set$cc3, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
   if(set$cc4=="ConstCal" || set$cc4=="\"ConstCal\"") cc4 <- NA else
     cc4 <- read.table(paste(ccdir, set$cc4, sep=""))[,1:3]
@@ -382,7 +369,7 @@ calib.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, rotate.axes=FA
 
   # now calibrate all dates
   calib <- list(d=dat[,4])
-  if(ncol(dat)==4) { # only one type of dates (e.g., calBP, or all IntCal13 C14 dates)
+  if(ncol(dat)==4) { # only one type of dates (e.g., calBP, or all IntCal20 C14 dates)
     if(set$cc==0) {
       x <- seq(min(dat[,2])-(5*max(dat[,3])), max(dat[,2])+(5*max(dat[,3])), by=5) # simplify, May 2019
       if(length(x) > 100) # if too many resulting years, make 100 vals
@@ -398,7 +385,7 @@ calib.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, rotate.axes=FA
       calib$probs[[i]] <- d.cal(ccurve, dat[i,2]-delta.R, dat[i,3]^2+delta.STD^2, set$t.a, set$t.b)
   } else
       for(i in 1:nrow(dat)) {
-        dets <- as.numeric(dat[i,])
+        dets <- c(NA, as.numeric(dat[i,-1])) # first entry is often not numeric
         if(dets[5]==0) {
           x <- seq(dets[2]-(5*dets[3]), dets[2]+(5*dets[3]), by=5) # simplify, May 2019
           if(length(x) < 5 || length(x) > 100) # if too many resulting years, make 100 vals
@@ -424,3 +411,279 @@ calib.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, rotate.axes=FA
       }
   calib
 }
+
+
+### for running Plum, but is looked for by generic agedepth() function, so is included in the rbacon code
+#' @name calib.plumbacon.plot
+#' @title Plot the dates
+#' @description Produce a plot of the dated depths and their dates
+#' @details This function is generally called internally to produce the age-depth graph.
+#' It can be used to produce custom-built graphs.
+#' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
+#' @param BCAD The calendar scale of graphs is in \code{cal BP} by default, but can be changed to BC/AD using \code{BCAD=TRUE}.
+#' @param cc Calibration curve to be used (defaults to info$cc)
+#' @param firstPlot description
+#' @param rotate.axes The default of plotting age on the horizontal axis and event probability on the vertical one can be changed with \code{rotate.axes=TRUE}.
+#' @param rev.d The direction of the depth axis can be reversed from the default (\code{rev.d=TRUE}).
+#' @param rev.age The direction of the calendar age axis can be reversed from the default (\code{rev.age=TRUE})
+#' @param rev.yr Deprecated - use rev.age instead
+#' @param age.lim Minimum and maximum calendar age ranges, calculated automatically by default (\code{age.lim=c()}).
+#' @param yr.lim Deprecated - use age.lim instead
+#' @param d.lab The labels for the depth axis. Default \code{d.lab="Depth (cm)"}.
+#' @param age.lab The labels for the calendar axis (default \code{yr.lab="cal BP"} or \code{"BC/AD"} if \code{BCAD=TRUE}).
+#' @param yr.lab Deprecated - use age.lab instead
+#' @param height The heights of the distributions of the dates. See also \code{normalise.dists}.
+#' @param calheight Multiplier for the heights of the distributions of dates on the calendar scale. Defaults to \code{calheight=1}.
+#' @param mirror Plot the dates as 'blobs'. Set to \code{mirror=FALSE} to plot simple distributions.
+#' @param up Directions of distributions if they are plotted non-mirrored. Default \code{up=TRUE}.
+#' @param cutoff Avoid plotting very low probabilities of date distributions (default \code{cutoff=0.001}).
+#' @param date.res Date distributions are plotted using \code{date.res=100} points by default.
+#' @param C14.col Colour of the calibrated distributions of the dates. Default is semi-transparent blue: \code{rgb(0,0,1,.35)}.
+#' @param C14.border Colours of the borders of calibrated 14C dates. Default is transparent dark blue: cal.col
+#' @param cal.col Colour of the non-14C dates in the age-depth plot: default semi-transparent blue-green: \code{rgb(0,.5,.5,.35)}.
+#' @param cal.border Colour of the of the border of non-14C dates in the age-depth plot: default semi-transparent dark blue-green: \code{rgb(0,.5,.5,.5)}.
+#' @param dates.col As an alternative to colouring dates based on whether they are 14C or not, sets of dates can be coloured as, e.g., \code{dates.col=colours()[2:100]}.
+#' @param slump.col Colour of slumps. Defaults to \code{slump.col=grey(0.8)}.
+#' @param new.plot Start a new plot (\code{new.plot=TRUE}) or plot over an existing plot (\code{new.plot=FALSE}).
+#' @param plot.dists Plot the distributions of the dates (default \code{plot.dists=TRUE}).
+#' @param same.heights Plot the distributions of the dates all at the same maximum height (default \code{same.height=FALSE}).
+#' @param normalise.dists By default, the distributions of more precise dates will cover less time and will thus peak higher than less precise dates. This can be avoided by specifying \code{normalise.dists=FALSE}.
+#' @author Maarten Blaauw, J. Andres Christen
+#' @return NA
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @references
+#' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
+#' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
+#' \url{https://projecteuclid.org/euclid.ba/1339616472}
+#' @export
+### produce plots of the calibrated distributions
+calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firstPlot = FALSE, rotate.axes=FALSE, rev.d=FALSE, rev.age=FALSE, rev.yr=rev.age, age.lim=c(), yr.lim=age.lim, date.res=100, d.lab=c(), age.lab=c(), yr.lab=age.lab, height=15, calheight=1, mirror=TRUE, up=TRUE, cutoff=.001, C14.col=rgb(0,0,1,.5), C14.border=rgb(0,0,1,.75), cal.col=rgb(0,.5,.5,.5), cal.border=rgb(0,.5,.5,.75), dates.col=c(), slump.col=grey(0.8), new.plot=TRUE, plot.dists=TRUE, same.heights=FALSE, normalise.dists=TRUE) {
+  height <- length(set$d.min:set$d.max) * height/50
+  if(length(age.lim) == 0)
+    lims <- c()
+  for(i in 1:length(set$calib$probs))
+    lims <- c(lims, set$calib$probs[[i]][,1])
+  age.min <- min(lims)
+  age.max <- max(lims)
+  if(BCAD) {
+    age.min <- 1950 - age.min
+    age.max <- 1950 - age.max
+    }
+  if(length(age.lab) == 0)
+    age.lab <- ifelse(set$BCAD, "BC/AD", paste("cal", set$age.unit, " BP"))
+  age.lim <- extendrange(c(age.min, age.max), f=0.01)
+  if(rev.age)
+    age.lim <- age.lim[2:1]
+  dlim <- range(set$elbows)
+  if(rev.d)
+    dlim <- dlim[2:1]
+  if(length(d.lab) == 0)
+    d.lab <- paste("depth (", set$depth.unit, ")", sep="")
+
+  if(new.plot)
+    if(rotate.axes)
+      plot(0, type="n", xlim=age.lim, ylim=dlim[2:1], xlab=age.lab, ylab=d.lab, main="") else
+        plot(0, type="n", xlim=dlim, ylim=age.lim, xlab=d.lab, ylab=age.lab, main="")
+
+  if(length(set$slump) > 0)
+    if(rotate.axes)
+      abline(h=set$slump, lty=2, col=slump.col) else
+        abline(v=set$slump, lty=2, col=slump.col)
+
+  if(plot.dists)
+    for(i in 1:length(set$calib$probs)) {
+      if( set$dets[i,9] != 5 ){
+        cal <- cbind(set$calib$probs[[i]])
+        d <- set$calib$d[[i]]
+        if(BCAD)
+          cal[,1] <- 1950-cal[,1]
+        o <- order(cal[,1])
+        cal <- cbind(cal[o,1], cal[o,2])
+        if(same.heights)
+          cal[,2] <- cal[,2]/max(cal[,2])
+        if(normalise.dists)
+          cal[,2] <- cal[,2]/sum(cal[,2])
+        cal <- cal[cal[,2] >= cutoff,]
+        cal[,2] <- height*cal[,2]
+        if(ncol(set$dets) > 4 && set$dets[i,9] == 0) # cal BP date
+          cal[,2] <- calheight*cal[,2]
+
+        x = cal[,1]
+        y = cal[,2]
+
+        y = y[!duplicated(x)]
+        x = x[!duplicated(x)]
+        #seq(min(cal[,1]), max(cal[,1]), length= length(cal[,1]) )
+        cal <- approx(x, y, seq(min(x), max(x), length= 100 ) ) # tmp
+
+        if(mirror)
+          pol <- cbind(c(d-cal$y, d+rev(cal$y)), c(cal$x, rev(cal$x)))
+        else if(up)
+          pol <- cbind(d-c(0, cal$y, 0), c(min(cal$x), cal$x, max(cal$x)))
+        else
+          pol <- cbind(d+c(0, cal$y, 0), c(min(cal$x), cal$x, max(cal$x)))
+        if(rotate.axes)
+          pol <- cbind(pol[,2], pol[,1])
+        if(ncol(set$dets)==4 && cc > 0 || (ncol(set$dets) > 4 && set$dets[i,9] > 0)) {
+          col <- C14.col
+          border <- C14.border
+        } else {
+          col <- cal.col
+          border <- cal.border
+        }
+        if(length(dates.col) > 0) {
+          col <- dates.col[i]
+          border <- dates.col[i]
+        }
+        polygon(pol, col=col, border=border)
+      }
+    }
+
+}
+
+
+
+### for running Plum, but is looked for by generic agedepth() function, so is included in the rbacon code
+#' @name draw.pbmodelled
+#' @title Plot the 210Pb data
+#' @description Produce a plot of the 210Pb data and their depths
+#' @details This function is generally called internally to produce the age-depth graph.
+#' It can be used to produce custom-built graphs.
+#' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
+#' @param BCAD The calendar scale of graphs is in \code{cal BP} by default, but can be changed to BC/AD using \code{BCAD=TRUE}.
+#' @param rotate.axes The default of plotting age on the horizontal axis and event probability on the vertical one can be changed with \code{rotate.axes=TRUE}.
+#' @param rev.d The direction of the depth axis can be reversed from the default (\code{rev.d=TRUE}).
+#' @param pb.lim Minimum and maximum of the 210Pb axis ranges, calculated automatically by default (\code{pb.lim=c()}).
+#' @param d.lim Minimum and maximum depths to plot; calculated automatically by default (\code{d.lim=c()}).
+#' @param d.lab The labels for the depth axis. Default \code{d.lab="Depth (cm)"}.
+#' @param pb.lab The label for the 210Pb axis (default \code{pb.lab="210Pb (Bq/kg)"} or \code{"210Pb (dpm/g)"}).
+#' @param pbmeasured.col Colour of the measured 210Pb data. Defaults to blue: \code{pbmeasured.col="blue"}.
+#' @param pbmodelled.col Colour of the modelled 210Pb data. Defaults to shades of blue: \code{pbmodelled.col=function(x) rgb(0,0,1,x)}.
+#' @param supp.col Colour of the supported 210Pb data. Defaults to red: \code{supp.col="red"}.
+#' @param plot.measured Plot the measured 210Pb values (default \code{plot.measured=TRUE}).
+#' @param age.lim values of the age axis. Used to calculate where to plot the pb values on the secondary axis
+#' @author Maarten Blaauw, J. Andres Christen, Marco Aquino-Lopez
+#' @return A plot of the modelled (and optionally the measured) 210Pb values
+#' @export
+draw.pbmodelled <- function(set=get('info'), BCAD=set$BCAD, rotate.axes=FALSE, rev.d=FALSE, pb.lim=c(), d.lim=c(), d.lab=c(), pb.lab=c(), pbmodelled.col=function(x) rgb(0,0,1,x), pbmeasured.col="blue", supp.col="red", plot.measured=TRUE, age.lim=c()) {
+  depths <- set$detsOrig[,2]
+  dns <- set$detsOrig[,3]
+  Pb <- set$detsOrig[,4]
+  err <- set$detsOrig[,5]
+  thickness <- set$detsOrig[,6]
+  n <- nrow(set$detsOrig)
+
+  if(ncol(set$detsPlum) > 6) {
+    supp <- set$detsOrig[,7]
+    supperr <- set$detsOrig[,8]
+  }
+
+  if(length(d.lab) == 0)
+    d.lab <- paste("depth (", set$depth.unit, ")", sep="")
+  if(length(pb.lab) == 0)
+    pb.lab <- ifelse(set$Bqkg, "210Pb (Bq/kg)", "210Pb (dpm/g)")    
+
+  if(length(d.lim) == 0)
+    d.lim <- range(depths)
+  if(rev.d)
+    d.lim <- d.lim[2:1]
+   
+  if(length(set$phi) > 0) {
+    Ai <- list(x=c(), y=c())
+    hght <- 0; pbmin <- c(); pbmax <- 0
+    A.rng <- array(0, dim=c(n,2))
+    for(i in 1:length(depths)) {
+      A <- A.modelled(depths[i]-thickness[i], depths[i], dns[i], set)
+      if(!is.numeric(A)) 
+        A <- c(0,0) # as ugly as an owl with just one ear!
+      tmp <- density(A)
+      Ai$x[[i]] <- tmp$x
+      Ai$y[[i]] <- tmp$y
+      hght <- max(hght, Ai$y[[i]])
+      pbmin <- min(pbmin, Ai$y[[i]], na.rm=TRUE)
+      pbmax <- max(pbmax, Ai$x[[i]], na.rm=TRUE)
+      A.rng[i,] <- quantile(A, c((1-set$prob)/2, 1-(1-set$prob)/2))
+    } 
+ 
+    if(length(pb.lim) == 0) 
+      pb.lim <- extendrange(c(0, Pb-2*err, Pb+2*err, pbmax), f=c(0,0.05))
+ 
+    # translate pb values to cal BP (or BC/AD?) values for plotting on the age axis. 
+    pb2bp <- function(pb, pb.min=pb.lim[1], pb.max=pb.lim[2], agemin=age.lim[1], agemax=age.lim[2]) {
+      ex <- (agemax-agemin) / (pb.max - pb.min)
+      agemin + ex*pb
+    }      
+      
+    # save the values for later; DOESN'T WORK and I don't understand why not
+    set$Ai <- Ai
+    set$A.rng <- A.rng
+    .assign_to_global("info", set)
+  
+    ax <- ifelse(rotate.axes, 3, 4) 
+    pretty.pb <- pretty(c(pbmin, pbmax))
+    onbp <- pb2bp(pretty.pb)
+    pb.lab <- ifelse(set$Bq, "Bq/kg", "dpm/g")
+    axis(ax, onbp, pretty.pb, col=pbmeasured.col, col.axis=pbmeasured.col, col.lab=pbmeasured.col)
+    mtext(pb.lab, ax, 1.4, col=pbmeasured.col, cex=.8)
+
+    for(i in 1:length(depths)) {
+      age <- pb2bp( Ai$x[[i]] )
+      z <- t( Ai$y[[i]] )/hght # normalise to the densest point
+#      if(BCAD) {
+ #       z <- t(rev( Ai$y[[i]] ))/hght
+  #      age <- rev(age)
+   #   }
+    depth <- c(depths[i]-thickness[i], depths[i])
+
+      if(rotate.axes)
+        image(age, depth, t(z), col=pbmodelled.col(seq(0, 1-max(z), length=50)),  add=TRUE) else
+          image(depth, age, z, col=pbmodelled.col(seq(0, 1-max(z), length=50)), add=TRUE) 
+    }
+  }
+
+  if(plot.measured) {
+    if(rotate.axes)
+      rect(pb2bp(Pb-err), depths, pb2bp(Pb+err), depths-thickness, 
+        border=pbmeasured.col, lty=3) else
+          rect(depths, pb2bp(Pb-err), depths-thickness, pb2bp(Pb+err),
+            border=pbmeasured.col, lty=3)
+
+    if(ncol(set$detsOrig) > 6) {
+      supp <- set$detsOrig[,7]
+      supperr <- set$detsOrig[,8]
+      if(rotate.axes)
+        rect(pb2bp(supp-supperr), depths-thickness, pb2bp(supp+supperr), depths,
+          border=supp.col, lty=3) else
+          rect(depths-thickness, pb2bp(supp-supperr), depths, pb2bp(supp+supperr), 
+            border=supp.col, lty=3)
+    }
+  }
+}
+
+
+
+### for running Plum, but is looked for by generic agedepth() function, so is included in the rbacon code
+#' @name A.modelled
+#' @title Calculate modelled 210Pb
+#' @description Calculate modelled 210Pb values of a sample slice, based on the parameters of the age-model (i.e., time passed since deposition of the bottom and top of the slice), supported and influx
+#' @param d.top top depth of the slice
+#' @param d.bottom bottom depth of the slice
+#' @param dens Density of the slice (in g/cm3)
+#' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
+#' @param phi The modelled values of the 210Pb influx
+#' @param sup The modelled values of the supported 210Pb
+#' @author Maarten Blaauw
+#' @return a list of modelled values of A
+#' @export
+A.modelled <- function(d.top, d.bottom, dens, set=get('info'), phi=set$phi, sup=set$ps) {
+  if(d.top >= d.bottom)
+    stop("\n d.top should be higher than d.bottom", call.=FALSE)
+  t.top <- Bacon.Age.d(d.top, BCAD=F) - set$theta0
+  t.bottom <- Bacon.Age.d(d.bottom, BCAD=F) - set$theta0
+  multiply <- 500
+  if(set$Bqkg)
+	multiply <- 10  
+  return(sup + ((phi / (.03114*multiply*dens) ) * (exp( -.03114*t.top) - exp(-.03114*t.bottom)) ) )
+} 
+
+

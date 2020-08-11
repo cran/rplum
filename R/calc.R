@@ -12,12 +12,7 @@
 #' @param remove Whether or not to remove NA values (ages within slumps)
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return Outputs all MCMC-derived ages for a given depth.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(age.res=50, d.res=50, d.by=10)
-#'   ages.d20 = Bacon.Age.d(20)
-#'   mean(ages.d20)
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
@@ -46,16 +41,16 @@ Bacon.Age.d <- function(d, set=get('info'), its=set$output, BCAD=set$BCAD, remov
       ages <- topages + (set$thick * cumaccs[,maxd]) + # topages + xi * dC + ...
 	   ((d-set$elbows[maxd]) * accs[,maxd]) # ... remaining bit of lowest section
 
-      # now using a uniform jump, not gamma.
+      # now using a uniform jump, not gamma
       if(!is.na(hiatus.depths[1]))
         for(i in 1:length(hiatus.depths)) {
           above <- max(which(set$elbows < hiatus.depths[i]), 1)[1]
           below <- above + 1
           if(d > set$elbows[above] && d <= set$elbows[below]) { # adapt ages for sections with hiatus
-            if(d > hiatus.depths[i])
-  	          ages <- set$elbow.below[,i] - (set$slope.below[,i] * (set$elbows[below] - d)) else
-	            ages <- set$elbow.above[,i] + (set$slope.above[,i] * (d - set$elbows[above]))
-	      }
+            if(d > hiatus.depths[i]) # April 2020, changed snippets below from [[i]]] to [,i]
+              ages <- set$elbow.below[,i] - (set$slope.below[,i] * (set$elbows[below] - d)) else
+                ages <- set$elbow.above[,i] + (set$slope.above[,i] * (d - set$elbows[above]))
+            }
         }
     }
   if(BCAD)
@@ -92,52 +87,56 @@ hiatus.slopes <- function(set=get('info'), hiatus.option=1) {
 
   for(i in 1:length(hiatus.depths)) {
     above <- max(which(elbows < hiatus.depths[i]), 1) ### is this the correct one?
-	elbow.below <- elbow.ages[,above+1]
-	elbow.above <- elbow.ages[,above]
-	orig.slope <- accs[,above]
+      elbow.below <- elbow.ages[,above+1]
+      elbow.above <- elbow.ages[,above]
+      orig.slope <- accs[,above]
 
     if(hiatus.option == 0) { # then do nothing
       slope.below <- orig.slope
-	  slope.above <- orig.slope
+      slope.above <- orig.slope
     }
-	if(hiatus.option == 1) { # then extrapolate slopes above/below section w hiatus
-	  slope.below <- its[,above+2]
-	  slope.above <- its[,above]
-	}
-	if(hiatus.option == 2) { # then w-weighted for below, and prior-only for above
+    if(hiatus.option == 1) { # then extrapolate slopes above/below section w hiatus
+      slope.below <- its[,above+2]
+      slope.above <- its[,above]
+    }
+    if(hiatus.option == 2) { # then w-weighted for below, and prior-only for above
       slope.below <- w*set$output[,above+2] + (1-w)*set$acc.mean[i+1]
-  	  slope.above <- rep(set$acc.mean[i], nrow(its))
+      slope.above <- rep(set$acc.mean[i], nrow(its))
     }
 
-	# now calculate the ages at the hiatus/boundary, coming from below and from above
-  	ages.above <- elbow.above + (slope.above * (hiatus.depths[i] - elbows[above]))
+    # now calculate the ages at the hiatus/boundary, coming from below and from above
+    ages.above <- elbow.above + (slope.above * (hiatus.depths[i] - elbows[above]))
     ages.below <- elbow.below - (slope.below * (elbows[above+1] - hiatus.depths[i]))
 
     if(!is.na(set$boundary[1])) { # then set the boundary's elbow at ages.below for both sections
-	  if(length(set$slumpboundary) > 0)
-		boundary <- set$slumpboundary else
-	      boundary <- set$boundary
-	  ages.boundary <- elbow.below - (slope.below * (elbows[above+1] - set$boundary[i]))
-	  slope.above <- (ages.boundary - elbow.above) / (set$boundary[i] - elbows[above])
-	  slope.below <- (ages.below - ages.boundary) / (elbows[above+1] - set$boundary[i])
+      if(length(set$slumpboundary) > 0)
+        boundary <- set$slumpboundary else
+          boundary <- set$boundary
+      ages.boundary <- elbow.below - (slope.below * (elbows[above+1] - set$boundary[i]))
+      slope.above <- (ages.boundary - elbow.above) / (set$boundary[i] - elbows[above])
+      slope.below <- (ages.below - ages.boundary) / (elbows[above+1] - set$boundary[i])
     }
 
-	# for sections with reversals, use the original slopes
-  	reversed <- c(which(elbow.above > ages.above),
-	  which(ages.above > ages.below),
-	    which(ages.below > elbow.below),
-		which(slope.below < 0), which(slope.above < 0))
-	if(length(reversed) > 0) {
-  	  slope.above[reversed] <- orig.slope[reversed]
-  	  slope.below[reversed] <- orig.slope[reversed]
-    }
+    # for sections with reversals, use the original slopes
+    reversed <- c(which(elbow.above > ages.above),
+      which(ages.above > ages.below),
+      which(ages.below > elbow.below),
+      which(slope.below < 0), which(slope.above < 0))
+   if(length(reversed) > 0) {
+     slope.above[reversed] <- orig.slope[reversed]
+     slope.below[reversed] <- orig.slope[reversed]
+   }
 
     # store the updated information
-    set$elbow.below[,i] <- elbow.below # adapted April 2020
-    set$elbow.above[,i] <- elbow.above # adapted 
-    set$slope.below[,i] <- slope.below # adapted
-    set$slope.above[,i] <- slope.above # adapted
-
+    # set$elbow.below[[i]] <- elbow.below # commented Apr 2020
+    # set$elbow.above[[i]] <- elbow.above
+    # set$slope.below[[i]] <- slope.below
+    # set$slope.above[[i]] <- slope.above
+    set$elbow.below[,i] <- elbow.below # new April 2020
+    set$elbow.above[,i] <- elbow.above # new 
+    set$slope.below[,i] <- slope.below # new
+    set$slope.above[,i] <- slope.above # new
+    
     set$above <- above
   }
   return(set)
@@ -168,12 +167,7 @@ hiatus.slopes <- function(set=get('info'), hiatus.option=1) {
 #' @param verbose Provide feedback on what is happening (default \code{verbose=TRUE}).
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A plot with the histogram and the age ranges, median and mean, or just the age ranges, medians and means if more than one depth \code{d} is given.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(age.res=50, d.res=50, d.by=10)
-#'   Bacon.hist(20)
-#'   Bacon.hist(20:30)
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
@@ -186,7 +180,7 @@ Bacon.hist <- function(d, set=get('info'), BCAD=set$BCAD, age.lab=c(), age.lim=c
     .assign_to_global("set", set)
   }
   hist3 <- function(d, BCAD) {
-    hsts <- c(); maxhist <- 0; minhist <- 1
+    hsts <- list(); maxhist <- 0; minhist <- 1
     pb <- txtProgressBar(min=0, max=max(1,length(d)-1), style = 3)
     for(i in 1:length(d)) {
       if(length(d) > 1)
@@ -211,7 +205,6 @@ Bacon.hist <- function(d, set=get('info'), BCAD=set$BCAD, age.lab=c(), age.lim=c
 
   # rng <- c()
   rng <- array(NA, dim=c(length(d), 4)) # to deal with new R which does not like to fill c() using loops
-
   if(calc.range)
     rng <- Bacon.rng(d, set, BCAD, prob)
 
@@ -277,11 +270,7 @@ Bacon.rng <- function(d, set=get('info'), BCAD=set$BCAD, prob=set$prob) {
 #' @param BCAD The calendar scale of graphs and age output-files is in \code{cal BP} by default, but can be changed to BC/AD using \code{BCAD=TRUE}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A variable with two columns - depth and the age-depth model of a single iteration.
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(age.res=50, d.res=50, d.by=10)
-#'   lines(agemodel.it(5), col="red")
-#' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+#' @seealso \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 #' gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

@@ -102,13 +102,6 @@ Proxies analysed along the depths of a core can be plotted as 'proxy-ghost' grap
 Place a csv file with the values of proxies against depth within your core's folder. The values should be in columns separated by commas (default \code{sep=","}), the first column containing the depths and the first line (header) containing the proxy names.
 The file name should start with the core's name and end with "_proxies.csv". For an example see \code{"Bacon_coredir/MSB2K/MSB2K_proxies.csv"} or \code{"Cores/MSB2K/MSB2K_proxies.csv"}.
 }
-\examples{
-\donttest{
-  Plum(ask=FALSE, coredir=tempfile())
-  layout(1)
-  proxy.ghost()
-}
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

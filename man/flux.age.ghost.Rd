@@ -99,14 +99,6 @@ flux values for the first proxy in the .csv file. Instead of using a _flux.csv f
  within the R session (consisting of depths and their proxy concentrations in two columns). Then provide the name of this variable, e.g.: \code{flux.age.ghost(flux=flux1)}.
 See Plum_runs/MSB2K/MSB2K_flux.csv for an example.
 }
-\examples{
-\donttest{
-  Plum(run=FALSE, coredir=tempfile())
-  agedepth(yr.res=50)
-  flux <- cbind(1:25, rnorm(25, 100, 10)) # fake time-series
-  flux.age.ghost(flux=flux)
-}
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.

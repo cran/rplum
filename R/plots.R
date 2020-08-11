@@ -35,12 +35,6 @@
 #' @param verbose Provide feedback on what is happening (default \code{verbose=TRUE}).
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A grey-scale graph of the proxy against calendar age.
-#' @examples
-#' \donttest{
-#'   Plum(ask=FALSE, coredir=tempfile())
-#'   layout(1)
-#'   proxy.ghost()
-#' }
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
@@ -183,12 +177,6 @@ proxy.ghost <- function(proxy=1, proxy.lab=c(), proxy.res=250, age.res=200, yr.r
 #'  \code{"c"}, \code{"u"}, "]" or \code{"o"} for correspondingly shaped boxes).
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return The resulting probabilities are plotted and saved within the core's folder (file names ending with the window width and "_probs.txt").
-#' @examples
-#' \donttest{
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   agedepth(yr.res=50)
-#'   AgesOfEvents(10, 1)
-#' }
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
 #' Blaauw, M., Christen, J.A., Mauquoy, D., van der Plicht, J., Bennett, K.D. (2007) Testing the timing of radiocarbon-dated events between proxy archives. _The Holocene_, *17*, 283-288.

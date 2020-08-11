@@ -54,23 +54,20 @@ draw.pbmeasured <- function(set=get('info'), rotate.axes=FALSE, rev.d=FALSE, rev
     plot(0, type="n", ylim=d.lim, ylab=d.lab, xlim=pb.lim, xlab=pb.lab) else
       plot(0, type="n", xlim=d.lim, xlab=d.lab, ylim=pb.lim, ylab=pb.lab)
     
-  if(ncol(set$detsPlum) == 6) {
+  if(rotate.axes)
+    rect(Pb-err, depths-thickness, Pb+err, depths, border=pbmeasured.col, lty=3) else
+      rect(depths-thickness, Pb-err, depths, Pb+err, lty=3, border=pbmeasured.col)
+    
+  if(ncol(set$detsOrig) > 6) {
+    supp <- set$detsOrig[,7]
+    supperr <- set$detsOrig[,8]
     if(rotate.axes)
-      rect(Pb-2*err, depths-thickness, Pb+2*err, depths, 
-        border=c(rep(pbmeasured.col, n), rep(2, n))) else
-        rect(depths-thickness, Pb-2*err, depths, Pb+2*err, border=c(rep(pbmeasured.col, n), rep(2, n)))
-     } else {
-        supp <- set$detsOrig[,7]
-        supperr <- set$detsOrig[,8]
-        if(rotate.axes)
-          rect(c(Pb-2*err,supp-2*supperr), c(depths-thickness,depths), 
-            c(Pb+2*err,supp+2*supperr), c(depths-thickness, depths),
-            border=c(rep(pbmeasured.col, n), rep(supp.col, n))) else
-              rect(c(depths-thickness,depths), c(Pb-2*err,supp-2*supperr), 
-                c(depths-thickness, depths), c(Pb+2*err,supp+2*supperr), 
-                border=c(rep(pbmeasured.col, n), rep(supp.col, n)))
+      rect(supp-supperr, depths-thickness, supp+supperr, depths,
+        border=supp.col, lty=3) else
+        rect(depths-thickness, supp-supperr, depths, supp+supperr, 
+          border=supp.col, lty=3) 
        }  
-}
+  }
 
 
 
@@ -83,7 +80,6 @@ draw.pbmeasured <- function(set=get('info'), rotate.axes=FALSE, rev.d=FALSE, rev
 #' @param BCAD The calendar scale of graphs is in \code{cal BP} by default, but can be changed to BC/AD using \code{BCAD=TRUE}.
 #' @param rotate.axes The default of plotting age on the horizontal axis and event probability on the vertical one can be changed with \code{rotate.axes=TRUE}.
 #' @param rev.d The direction of the depth axis can be reversed from the default (\code{rev.d=TRUE}).
-#' @param rev.age The direction of the calendar age axis can be reversed from the default (\code{rev.age=TRUE})
 #' @param pb.lim Minimum and maximum of the 210Pb axis ranges, calculated automatically by default (\code{pb.lim=c()}).
 #' @param d.lim Minimum and maximum depths to plot; calculated automatically by default (\code{d.lim=c()}).
 #' @param d.lab The labels for the depth axis. Default \code{d.lab="Depth (cm)"}.
@@ -96,7 +92,7 @@ draw.pbmeasured <- function(set=get('info'), rotate.axes=FALSE, rev.d=FALSE, rev
 #' @author Maarten Blaauw, J. Andres Christen, Marco Aquino-Lopez
 #' @return A plot of the modelled (and optionally the measured) 210Pb values
 #' @export
-draw.pbmodelled <- function(set=get('info'), BCAD=set$BCAD, rotate.axes=FALSE, rev.d=FALSE, rev.age=FALSE, pb.lim=c(), d.lim=c(), d.lab=c(), pb.lab=c(), pbmodelled.col=function(x) rgb(0,0,1,x), pbmeasured.col="blue", supp.col="red", plot.measured=TRUE, age.lim=c()) {
+draw.pbmodelled <- function(set=get('info'), BCAD=set$BCAD, rotate.axes=FALSE, rev.d=FALSE, pb.lim=c(), d.lim=c(), d.lab=c(), pb.lab=c(), pbmodelled.col=function(x) rgb(0,0,1,x), pbmeasured.col="blue", supp.col="red", plot.measured=TRUE, age.lim=c()) {
   depths <- set$detsOrig[,2]
   dns <- set$detsOrig[,3]
   Pb <- set$detsOrig[,4]
@@ -131,8 +127,8 @@ draw.pbmodelled <- function(set=get('info'), BCAD=set$BCAD, rotate.axes=FALSE, r
       Ai$x[[i]] <- tmp$x
       Ai$y[[i]] <- tmp$y
       hght <- max(hght, Ai$y[[i]])
-      pbmin <- min(pbmin, Ai$y[[i]])
-      pbmax <- max(pbmax, Ai$x[[i]])
+      pbmin <- min(pbmin, Ai$y[[i]], na.rm=TRUE)
+      pbmax <- max(pbmax, Ai$x[[i]], na.rm=TRUE)
       A.rng[i,] <- quantile(A, c((1-set$prob)/2, 1-(1-set$prob)/2))
     } 
  
@@ -160,11 +156,11 @@ draw.pbmodelled <- function(set=get('info'), BCAD=set$BCAD, rotate.axes=FALSE, r
     for(i in 1:length(depths)) {
       age <- pb2bp( Ai$x[[i]] )
       z <- t( Ai$y[[i]] )/hght # normalise to the densest point
-      if(BCAD) {
-        z <- t(rev( Ai$y[[i]] ))/hght
-        age <- rev(age)
-      }
-      depth <- c(depths[i]-thickness[i], depths[i])
+#      if(BCAD) {
+ #       z <- t(rev( Ai$y[[i]] ))/hght
+  #      age <- rev(age)
+   #   }
+    depth <- c(depths[i]-thickness[i], depths[i])
 
       if(rotate.axes)
         image(age, depth, t(z), col=pbmodelled.col(seq(0, 1-max(z), length=50)),  add=TRUE) else
@@ -172,23 +168,23 @@ draw.pbmodelled <- function(set=get('info'), BCAD=set$BCAD, rotate.axes=FALSE, r
     }
   }
 
-  if(plot.measured) 
-    if(ncol(set$detsOrig) == 6) {
+  if(plot.measured) {
+    if(rotate.axes)
+      rect(pb2bp(Pb-err), depths, pb2bp(Pb+err), depths-thickness, 
+        border=pbmeasured.col, lty=3) else
+          rect(depths, pb2bp(Pb-err), depths-thickness, pb2bp(Pb+err),
+            border=pbmeasured.col, lty=3)
+
+    if(ncol(set$detsOrig) > 6) {
+      supp <- set$detsOrig[,7]
+      supperr <- set$detsOrig[,8]
       if(rotate.axes)
-        rect(pb2bp(Pb-2*err), depths-thickness, pb2bp(Pb+2*err), depths, 
-          border=c(rep(pbmeasured.col, n), rep(2, n)), lty=3) else
-            rect(depths-thickness, pb2bp(Pb-2*err), depths, pb2bp(Pb+2*err), border=c(rep(pbmeasured.col, n), rep(2, n)), lty=3)
-      } else {
-          supp <- set$detsOrig[,7]
-          supperr <- set$detsOrig[,8]
-          if(rotate.axes)
-            rect(pb2bp(c(Pb-2*err,supp-2*supperr)), c(depths-thickness,depths), 
-              pb2bp(c(Pb+2*err,supp+2*supperr)), c(depths-thickness, depths),
-                border=c(rep(pbmeasured.col, n), rep(supp.col, n)), lty=3) else
-                rect(c(depths-thickness,depths), pb2bp(c(Pb-2*err,supp-2*supperr)), 
-                  c(depths-thickness, depths), pb2bp(c(Pb+2*err,supp+2*supperr)), 
-                  border=c(rep(pbmeasured.col, n), rep(supp.col, n)), lty=3)
-        }
+        rect(pb2bp(supp-supperr), depths-thickness, pb2bp(supp+supperr), depths,
+          border=supp.col, lty=3) else
+          rect(depths-thickness, pb2bp(supp-supperr), depths, pb2bp(supp+supperr), 
+            border=supp.col, lty=3)
+    }
+  }
 }
 
 
@@ -254,9 +250,6 @@ A.modelled <- function(d.top, d.bottom, dens, set=get('info'), phi=set$phi, sup=
 #' @param normalise.dists By default, the distributions of more precise dates will cover less time and will thus peak higher than less precise dates. This can be avoided by specifying \code{normalise.dists=FALSE}.
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return NA
-#' @examples
-#'   Plum(run=FALSE, coredir=tempfile())
-#'   calib.plot()
 #'
 #' @seealso  \url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 #' @references
@@ -271,7 +264,7 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
     lims <- c()
   for(i in 1:length(set$calib$probs))
     lims <- c(lims, set$calib$probs[[i]][,1])
-  age.min <- min(lims)
+  age.min <- min(lims, na.rm=TRUE) # na.rm July 2020
   age.max <- max(lims)
   if(BCAD) {
     age.min <- 1950 - age.min
@@ -353,24 +346,24 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
 .plum.calib <- function(dat, set=get('info'), date.res=100, normal=set$normal, t.a=set$t.a, t.b=set$t.b,
                         delta.R=set$delta.R, delta.STD=set$delta.STD, ccdir="") {
   # read in the curves
-  if(set$cc1=="IntCal13" || set$cc1=="\"IntCal13\"")
-    cc1 <- read.table(paste(ccdir, "3Col_intcal13.14C",sep="")) else
-      cc1 <- read.csv(paste(ccdir, set$cc1, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
-  if(set$cc2=="Marine13" || set$cc2=="\"Marine13\"")
-    cc2 <- read.table(paste(ccdir, "3Col_marine13.14C",sep="")) else
-      cc2 <- read.csv(paste(ccdir, set$cc2, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
-  if(set$cc3=="SHCal13" || set$cc3=="\"SHCal13\"")
-    cc3 <- read.table(paste(ccdir, "3Col_shcal13.14C",sep="")) else
-      cc3 <- read.csv(paste(ccdir, set$cc3, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
+  if(set$cc1=="IntCal20" || set$cc1=="\"IntCal20\"")
+    cc1 <- read.table(paste0(ccdir, "3Col_intcal20.14C")) else
+      cc1 <- read.csv(paste0(ccdir, set$cc1, ".14C"), header=FALSE, skip=11)[,1:3]
+  if(set$cc2=="Marine20" || set$cc2=="\"Marine20\"")
+    cc2 <- read.table(paste0(ccdir, "3Col_marine20.14C")) else
+      cc2 <- read.csv(paste0(ccdir, set$cc2, ".14C"), header=FALSE, skip=11)[,1:3]
+  if(set$cc3=="SHCal20" || set$cc3=="\"SHCal20\"")
+    cc3 <- read.table(paste0(ccdir, "3Col_shcal20.14C")) else
+      cc3 <- read.csv(paste0(ccdir, set$cc3, ".14C"), header=FALSE, skip=11)[,1:3]
   if(set$cc4=="ConstCal" || set$cc4=="\"ConstCal\"") cc4 <- NA else
-    cc4 <- read.table(paste(ccdir, set$cc4, sep=""))[,1:3]
+    cc4 <- read.table(paste0(ccdir, set$cc4))[,1:3]
 
   if(set$postbomb != 0) {
-    if(set$postbomb==1) bomb <- read.table(paste(ccdir,"postbomb_NH1.14C", sep=""))[,1:3] else
-      if(set$postbomb==2) bomb <- read.table(paste(ccdir,"postbomb_NH2.14C", sep=""))[,1:3] else
-        if(set$postbomb==3) bomb <- read.table(paste(ccdir,"postbomb_NH3.14C", sep=""))[,1:3] else
-          if(set$postbomb==4) bomb <- read.table(paste(ccdir,"postbomb_SH1-2.14C", sep=""))[,1:3] else
-            if(set$postbomb==5) bomb <- read.table(paste(ccdir,"postbomb_SH3.14C", sep=""))[,1:3] else
+    if(set$postbomb==1) bomb <- read.table(paste0(ccdir,"postbomb_NH1.14C"))[,1:3] else
+      if(set$postbomb==2) bomb <- read.table(paste0(ccdir,"postbomb_NH2.14C"))[,1:3] else
+        if(set$postbomb==3) bomb <- read.table(paste0(ccdir,"postbomb_NH3.14C"))[,1:3] else
+          if(set$postbomb==4) bomb <- read.table(paste0(ccdir,"postbomb_SH1-2.14C"))[,1:3] else
+            if(set$postbomb==5) bomb <- read.table(paste0(ccdir,"postbomb_SH3.14C"))[,1:3] else
               stop("cannot find postbomb curve #", set$postbomb, " (use values of 1 to 5 only)", call.=FALSE)
       bomb.x <- seq(max(bomb[,1]), min(bomb[,1]), by=-.1) # interpolate
       bomb.y <- approx(bomb[,1], bomb[,2], bomb.x)$y
@@ -402,8 +395,8 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
   calib <- list(d=dat[,4])
 
   for(i in 1:nrow(dat)) {
-    dets <- as.numeric(dat[i,])
-    if(dets[9]==0 || dets[9] == 5) {
+    dets <- c(NA, as.numeric(dat[i,-1])) # first entry is often not numeric    
+    if(dets[9]==0 || dets[9] == 5) { # cal BP or 210Pb data
       x <- seq(dets[2]-(5*dets[3]), dets[2]+(5*dets[3]), by=5) # simplify, May 2019
       if(length(x) < 5 || length(x) > 100) # if too many resulting years, make 100 vals
         x <- seq(dets[2]-(5*dets[3]), dets[2]+(5*dets[3]), length=100)
@@ -414,7 +407,7 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
 
     delta.R <- set$delta.R; delta.STD <- set$delta.STD; t.a <- set$t.a; t.b <- set$t.b
 
-    if(dets[9] > 0) { # only for C14 dates
+    if(dets[9] > 0 && dets[9] < 5) { # only for C14 dates
       delta.R <- dets[5]
       delta.STD <- dets[6]
     }
@@ -432,24 +425,24 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
 
 .plumbacon.calib <- function(datPlum, dat, set=get('info'), date.res=100, normal=set$normal, t.a=set$t.a, t.b=set$t.b, delta.R=set$delta.R, delta.STD=set$delta.STD, ccdir="") {
   # read in the curves
-  if(set$cc1=="IntCal13" || set$cc1=="\"IntCal13\"")
-    cc1 <- read.table(paste(ccdir, "3Col_intcal13.14C",sep="")) else
-      cc1 <- read.csv(paste(ccdir, set$cc1, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
-  if(set$cc2=="Marine13" || set$cc2=="\"Marine13\"")
-    cc2 <- read.table(paste(ccdir, "3Col_marine13.14C",sep="")) else
-      cc2 <- read.csv(paste(ccdir, set$cc2, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
-  if(set$cc3=="SHCal13" || set$cc3=="\"SHCal13\"")
-    cc3 <- read.table(paste(ccdir, "3Col_shcal13.14C",sep="")) else
-      cc3 <- read.csv(paste(ccdir, set$cc3, ".14C", sep=""), header=FALSE, skip=11)[,1:3]
+  if(set$cc1=="IntCal20" || set$cc1=="\"IntCal20\"")
+    cc1 <- read.table(paste0(ccdir, "3Col_intcal20.14C")) else
+      cc1 <- read.csv(paste0(ccdir, set$cc1, ".14C"), header=FALSE, skip=11)[,1:3]
+  if(set$cc2=="Marine20" || set$cc2=="\"Marine20\"")
+    cc2 <- read.table(paste0(ccdir, "3Col_marine20.14C",sep="")) else
+      cc2 <- read.csv(paste0(ccdir, set$cc2, ".14C"), header=FALSE, skip=11)[,1:3]
+  if(set$cc3=="SHCal20" || set$cc3=="\"SHCal20\"")
+    cc3 <- read.table(paste0(ccdir, "3Col_shcal20.14C")) else
+      cc3 <- read.csv(paste0(ccdir, set$cc3, ".14C"), header=FALSE, skip=11)[,1:3]
   if(set$cc4=="ConstCal" || set$cc4=="\"ConstCal\"") cc4 <- NA else
-    cc4 <- read.table(paste(ccdir, set$cc4, sep=""))[,1:3]
+    cc4 <- read.table(paste0(ccdir, set$cc4))[,1:3]
 
   if(set$postbomb != 0) {
-    if(set$postbomb==1) bomb <- read.table(paste(ccdir,"postbomb_NH1.14C", sep=""))[,1:3] else
-      if(set$postbomb==2) bomb <- read.table(paste(ccdir,"postbomb_NH2.14C", sep=""))[,1:3] else
-        if(set$postbomb==3) bomb <- read.table(paste(ccdir,"postbomb_NH3.14C", sep=""))[,1:3] else
-          if(set$postbomb==4) bomb <- read.table(paste(ccdir,"postbomb_SH1-2.14C", sep=""))[,1:3] else
-            if(set$postbomb==5) bomb <- read.table(paste(ccdir,"postbomb_SH3.14C", sep=""))[,1:3] else
+    if(set$postbomb==1) bomb <- read.table(paste0(ccdir,"postbomb_NH1.14C"))[,1:3] else
+      if(set$postbomb==2) bomb <- read.table(paste0(ccdir,"postbomb_NH2.14C"))[,1:3] else
+        if(set$postbomb==3) bomb <- read.table(paste0(ccdir,"postbomb_NH3.14C"))[,1:3] else
+          if(set$postbomb==4) bomb <- read.table(paste0(ccdir,"postbomb_SH1-2.14C"))[,1:3] else
+            if(set$postbomb==5) bomb <- read.table(paste0(ccdir,"postbomb_SH3.14C"))[,1:3] else
               stop("cannot find postbomb curve #", set$postbomb, " (use values of 1 to 5 only)", call.=FALSE)
       bomb.x <- seq(max(bomb[,1]), min(bomb[,1]), by=-.1) # interpolate
       bomb.y <- approx(bomb[,1], bomb[,2], bomb.x)$y
@@ -479,7 +472,7 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
 
   # now calibrate all dates
   calib <- list(d=dat[,4])
-  if(ncol(dat)==4) { # only one type of dates (e.g., calBP, or all IntCal13 C14 dates)
+  if(ncol(dat)==4) { # only one type of dates (e.g., calBP, or all IntCal20 C14 dates)
     if(set$cc==0) {
       x <- seq(min(dat[,2])-(5*max(dat[,3])), max(dat[,2])+(5*max(dat[,3])), by=5) # simplify, May 2019
       if(length(x) > 100) # if too many resulting years, make 100 vals
@@ -495,7 +488,7 @@ calib.plumbacon.plot <- function(set=get('info'), BCAD=set$BCAD, cc=set$cc, firs
       calib$probs[[i]] <- d.cal(ccurve, dat[i,2]-delta.R, dat[i,3]^2+delta.STD^2, set$t.a, set$t.b)
   } else
       for(i in 1:nrow(dat)) {
-        dets <- as.numeric(dat[i,])
+        dets <- c(NA, as.numeric(dat[i,-1])) # first entry is often not numeric
         if(dets[5]==0) {
           x <- seq(dets[2]-(5*dets[3]), dets[2]+(5*dets[3]), by=5) # simplify, May 2019
           if(length(x) < 5 || length(x) > 100) # if too many resulting years, make 100 vals

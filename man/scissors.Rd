@@ -25,19 +25,6 @@ of the fit of the iterations shows no undesirable features such as trends or sud
 If the run has a visible remaining burn-in, scissors can be used to remove them.
 To remove, e.g., the first 300 iterations, type \code{scissors(300)}. To remove the last 300 iterations, type \code{scissors(-300)}. To remove iterations 300 to 600, type \code{scissors(300:600)}.
 }
-\examples{
-\dontshow{
-  Plum(run=FALSE, coredir=tempfile())
-  scissors(100)
-  agedepth(d.res=50, age.res=50, d.by=10)
-}
-\donttest{
-  Plum(ask=FALSE, coredir=tempfile())
-  scissors(100)
-  agedepth()
-}
-
-}
 \references{
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
 gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
