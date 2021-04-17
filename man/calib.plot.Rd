@@ -18,11 +18,11 @@ calib.plot(
   d.lab = c(),
   age.lab = c(),
   yr.lab = age.lab,
-  height = 15,
+  height = 1,
   calheight = 1,
   mirror = TRUE,
   up = TRUE,
-  cutoff = 0.001,
+  cutoff = 0.1,
   C14.col = rgb(0, 0, 1, 0.5),
   C14.border = rgb(0, 0, 1, 0.75),
   cal.col = rgb(0, 0.5, 0.5, 0.5),
@@ -31,8 +31,7 @@ calib.plot(
   slump.col = grey(0.8),
   new.plot = TRUE,
   plot.dists = TRUE,
-  same.heights = FALSE,
-  normalise.dists = TRUE
+  same.heights = FALSE
 )
 }
 \arguments{
@@ -70,7 +69,7 @@ calib.plot(
 
 \item{up}{Directions of distributions if they are plotted non-mirrored. Default \code{up=TRUE}.}
 
-\item{cutoff}{Avoid plotting very low probabilities of date distributions (default \code{cutoff=0.001}).}
+\item{cutoff}{Avoid plotting very low probabilities of date distributions (default \code{cutoff=0.1}).}
 
 \item{C14.col}{Colour of the calibrated distributions of the dates. Default is semi-transparent blue: \code{rgb(0,0,1,.35)}.}
 
@@ -88,9 +87,7 @@ calib.plot(
 
 \item{plot.dists}{Plot the distributions of the dates (default \code{plot.dists=TRUE}).}
 
-\item{same.heights}{Plot the distributions of the dates all at the same maximum height (default \code{same.height=FALSE}).}
-
-\item{normalise.dists}{By default, the distributions of more precise dates will cover less time and will thus peak higher than less precise dates. This can be avoided by specifying \code{normalise.dists=FALSE}.}
+\item{same.heights}{Plot the distributions of the dates all at the same maximum height (default \code{same.height=FALSE}), which instead normalises the distributions (all have an area of 1).}
 }
 \value{
 NA
@@ -101,14 +98,6 @@ Produce a plot of the dated depths and their dates
 \details{
 This function is generally called internally to produce the age-depth graph.
 It can be used to produce custom-built graphs.
-}
-\references{
-Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
-gamma process. Bayesian Anal. 6 (2011), no. 3, 457--474.
-\url{https://projecteuclid.org/euclid.ba/1339616472}
-}
-\seealso{
-\url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
 }
 \author{
 Maarten Blaauw, J. Andres Christen

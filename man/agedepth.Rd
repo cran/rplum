@@ -7,7 +7,7 @@
 agedepth(
   set = get("info"),
   BCAD = set$BCAD,
-  depth.unit = "cm",
+  depth.unit = set$depth.unit,
   age.unit = "yr",
   unit = depth.unit,
   d.lab = c(),
@@ -27,24 +27,22 @@ agedepth(
   hiatus.option = 1,
   dark = c(),
   prob = set$prob,
-  rounded = 0,
+  rounded = c(),
   d.res = 400,
   age.res = 400,
   yr.res = age.res,
   date.res = 100,
-  grey.res = 100,
   rotate.axes = FALSE,
   rev.age = FALSE,
   rev.yr = rev.age,
   rev.d = FALSE,
   maxcalc = 500,
-  height = 15,
+  height = 1,
   calheight = 1,
   mirror = TRUE,
   up = TRUE,
-  cutoff = 0.001,
+  cutoff = 0.1,
   plot.range = TRUE,
-  panels = layout(1),
   range.col = grey(0.5),
   range.lty = "12",
   mn.col = "red",
@@ -56,24 +54,35 @@ agedepth(
   cal.col = rgb(0, 0.5, 0.5, 0.35),
   cal.border = rgb(0, 0.5, 0.5, 0.5),
   dates.col = c(),
+  pb.background = 0.5,
   pbmodelled.col = function(x) rgb(0, 0, 1, 0.5 * x),
   pbmeasured.col = "blue",
   pb.lim = c(),
+  supp.col = "purple",
   hiatus.col = grey(0.5),
   hiatus.lty = "12",
-  greyscale = grey(seq(1, 0, length = grey.res)),
+  rgb.scale = c(0, 0, 0),
+  rgb.res = 100,
   slump.col = grey(0.8),
   normalise.dists = TRUE,
   same.heights = FALSE,
   cc = set$cc,
   title = set$core,
-  title.location = "top",
+  title.location = "topleft",
+  title.size = 1.5,
   after = set$after,
   bty = "l",
-  mar = c(3, 3, 1, 1),
-  mgp = c(1.5, 0.7, 0),
+  mar.left = c(3, 3, 1, 1),
+  mar.middle = c(3, 0, 1, 0.5),
+  mar.right = c(3, 0, 1, 1),
+  mar.main = c(3, 3, 1, 1),
+  righthand = 3,
+  mgp = c(1.7, 0.7, 0),
   xaxs = "r",
   yaxs = "i",
+  prior.ticks = "n",
+  prior.fontsize = 0.9,
+  toppanel.fontsize = 0.9,
   xaxt = "s",
   yaxt = "s",
   plot.pb = TRUE,
@@ -88,7 +97,7 @@ agedepth(
 
 \item{BCAD}{The calendar scale of graphs and age output-files is in \code{cal BP} by default, but can be changed to BC/AD using \code{BCAD=TRUE}.}
 
-\item{depth.unit}{Units of the depths. Defaults to \code{depth.unit="cm"}.}
+\item{depth.unit}{Units of the depths. Defaults to the one provided in the Bacon() command, \code{depth.unit=set$depth.unit}.}
 
 \item{age.unit}{Units of the ages. Defaults to \code{age.unit="yr"}.}
 
@@ -131,7 +140,7 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{prob}{Confidence interval to report (between 0 and 1, default 0.95 or 95\%).}
 
-\item{rounded}{Rounding of years. Default is to round to single years.}
+\item{rounded}{Rounding of years. Default is to round to single years (1 digit for plum models).}
 
 \item{d.res}{Resolution or amount of greyscale pixels to cover the depth scale of the age-model plot. Default \code{d.res=200}.}
 
@@ -140,8 +149,6 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 \item{yr.res}{Deprecated - use age.res instead.}
 
 \item{date.res}{Date distributions are plotted using \code{date.res=100} points by default.}
-
-\item{grey.res}{Grey-scale resolution of the age-depth model. Default \code{grey.res=100}.}
 
 \item{rotate.axes}{By default, the age-depth model is plotted with the depths on the horizontal axis and ages on the vertical axis. This can be changed with \code{rotate.axes=TRUE}.}
 
@@ -161,11 +168,9 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{up}{Directions of distributions if they are plotted non-mirrored. Default \code{up=TRUE}.}
 
-\item{cutoff}{Avoid plotting very low probabilities of date distributions (default \code{cutoff=0.001}).}
+\item{cutoff}{Avoid plotting very low probabilities of date distributions (default \code{cutoff=0.1}).}
 
 \item{plot.range}{Whether or not to plot the curves showing the confidence ranges of the age-model. Defaults to (\code{plot.range=TRUE}).}
-
-\item{panels}{Divide the graph panel. Defaults to 1 graph per panel, \code{panels=layout(1)}. To avoid dividing into panels, use \code{panels=c()}.}
 
 \item{range.col}{The colour of the curves showing the confidence ranges of the age-model. Defaults to medium grey (\code{range.col=grey(0.5)}).}
 
@@ -189,17 +194,23 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{dates.col}{As an alternative to colouring dates based on whether they are 14C or not, sets of dates can be coloured as, e.g., \code{dates.col=colours()[2:100]}.}
 
+\item{pb.background}{Probability at which total Pb values are considered to have reached background values, or in other words, that their modelled values are at or below supported + detection limit (Al)). Setting this at .5 means that any depth with a Pb measurement, where at least half of the iterations model Pb values reaching background values, is flagged as having reached background. The age-model is not extended to any Pb measurements that have reached background.}
+
 \item{pbmodelled.col}{Colour of the modelled 210Pb values. Defaults to shades of blue: \code{pbmodelled.col=function(x) rgb(0,0,1,x)}.}
 
 \item{pbmeasured.col}{Colour of the measured 210Pb values (default \code{pbmeasured.col="blue"}). Draws rectangles of the upper and lower depths as well as the Pb values with 95 percent error ranges.}
 
 \item{pb.lim}{Axis limits for the Pb-210 data. Calculated automatically by default (\code{pblim=c()}).}
 
+\item{supp.col}{Colour of supported Pb-210. Defaults to purple, because why not.}
+
 \item{hiatus.col}{The colour of the depths of any hiatuses. Default \code{hiatus.col=grey(0.5)}.}
 
 \item{hiatus.lty}{The line type of the depths of any hiatuses. Default \code{hiatus.lty=12}.}
 
-\item{greyscale}{The function to produce a coloured representation of all age-models. Defaults to grey-scales: \code{greyscale=function(x) grey(1-x)}.}
+\item{rgb.scale}{The function to produce a coloured representation of all age-models. Needs 3 values for the intensity of red, green and blue. Defaults to grey-scales: \code{rgb.scale=c(0,0,0)}, but could also be, say, scales of red (\code{rgb.scale=c(1,0,0)}).}
+
+\item{rgb.res}{Resolution of the colour spectrum depicting the age-depth model. Default \code{rgb.res=100}.}
 
 \item{slump.col}{Colour of slumps. Defaults to \code{slump.col=grey(0.8)}.}
 
@@ -211,19 +222,35 @@ and its name should start with the core's name and end with '_depths.txt'. Then 
 
 \item{title}{The title of the age-depth model is plotted on the main panel. By default this is the core's name. To leave empty: \code{title=""}.}
 
-\item{title.location}{Location of the title. Default \code{title.location='top'}.}
+\item{title.location}{Location of the title. Default \code{title.location='topleft'}.}
+
+\item{title.size}{Size of the title font. Defaults to \code{title.size=1.5}.}
 
 \item{after}{Sets a short section above and below hiatus.depths within which to calculate ages. For internal calculations - do not change.}
 
 \item{bty}{Type of box to be drawn around plots (\code{"n"} for none, and \code{"l"} (default), \code{"7"}, \code{"c"}, \code{"u"}, or \code{"o"} for correspondingly shaped boxes).}
 
-\item{mar}{Plot margins (amount of white space along edges of axes 1-4). Default \code{mar=c(3,3,1,1)}.}
+\item{mar.left}{Plot margins for the topleft panel (amount of white space along edges of axes 1-4). Default \code{mar.left=c(3,3,1,1)}.}
 
-\item{mgp}{Axis text margins (where should titles, labels and tick marks be plotted). Defaults to \code{mgp=c(1.5, .7, .0)}.}
+\item{mar.middle}{Plot margins for the middle panel(s) at the top (amount of white space along edges of axes 1-4). Default \code{mar.middle=c(3,3,1,1)}.}
+
+\item{mar.right}{Plot margins for the topright panel (amount of white space along edges of axes 1-4). Default \code{mar.right=c(3,3,1,1)}.}
+
+\item{mar.main}{Plot margins for the main panel (amount of white space along edges of axes 1-4). Default \code{mar.main=c(3,3,1,1)}.}
+
+\item{righthand}{Adapt the righthand margins by a certain amount (default 2) to allow a righthand axis to be plotted (for plum)}
+
+\item{mgp}{Axis text margins (where should titles, labels and tick marks be plotted). Defaults to \code{mgp=c(1.7, .7, .0)}.}
 
 \item{xaxs}{Extension of x-axis. By default, add some extra white-space at both extremes (\code{xaxs="r"}). See ?par for other options.}
 
 \item{yaxs}{Extension of y-axis. By default, add no extra white-space at both extremes (\code{yaxs="i"}). See ?par for other options.}
+
+\item{prior.ticks}{Plot tickmarks and values on the vertical axes for the prior and posterior distributions. Defaults to no tick marks (\code{prior.ticks="n"}). Set to \code{prior.ticks="s"} to plot the tick marks. Note that these values are of little practical use, as they correspond poorly to, e.g., the mean and strength values. All that matters is that the areas of both the prior and the posterior distributions sum to 1; wider distributions tend to give lower peaks, and narrower distributions higher peaks.}
+
+\item{prior.fontsize}{Font size of the prior, relative to R's standard size. Defaults to \code{prior.fontsize=0.9}.}
+
+\item{toppanel.fontsize}{Font size of the top panels, relative to R's standard size. Defaults to \code{prior.fontsize=0.9}.}
 
 \item{xaxt}{Whether or not to plot the x-axis. Can be used to adapt axes after a plot. See ?par for other options.}
 
@@ -250,16 +277,8 @@ After loading a previous run, or after running either the \link{scissors} or \li
 again using the command \code{agedepth()}.
 }
 \examples{
-\donttest{
-  Plum(ssize=100, ask=FALSE, suggest=FALSE, coredir=tempfile(), 
-    date.sample=2018.5, radon.case=0, n.supp=3)
-  agedepth()
-}
-}
-\references{
-Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive
-gamma process. Bayesian Analysis 6 (2011), no. 3, 457--474.
-\url{https://projecteuclid.org/euclid.ba/1339616472}
+  Plum(run=FALSE, ask=FALSE, coredir=tempfile())
+  agedepth(age.res=50, d.res=50, d.by=1)
 }
 \author{
 Maarten Blaauw, J. Andres Christen

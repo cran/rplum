@@ -30,8 +30,8 @@ Plum(
   unit = depth.unit,
   acc.shape = 1.5,
   acc.mean = 10,
-  mem.strength = 4,
-  mem.mean = 0.7,
+  mem.strength = 10,
+  mem.mean = 0.5,
   boundary = NA,
   hiatus.depths = NA,
   hiatus.max = 10000,
@@ -66,6 +66,7 @@ Plum(
   MinAge = c(),
   MaxAge = c(),
   cutoff = 0.001,
+  rounded = 1,
   plot.pdf = TRUE,
   dark = 1,
   date.res = 100,
@@ -81,28 +82,28 @@ To run your own core, produce a .csv file with the dates as outlined in the manu
 
 \item{thick}{Plum will divide the core into sections of equal thickness specified by thick (default \code{thick=1}).}
 
-\item{otherdates}{Name of (optional) file with radiocarbon dates. This file should have the same format as the one used for Bacon, \code{otherdates=""}}
+\item{otherdates}{Name of (optional) file with radiocarbon dates. This file should have the same format as the one used for rbacon.}
 
 \item{coredir}{Folder where the core's files \code{core} are and/or will be located. This will be a folder with the core's name, within either the folder \code{coredir='Plum_runs/'}, or the folder Cores/ if it already exists within R's working directory, or a custom-built folder. For example, use \code{coredir="."} to place the core's folder within the current working directory, or \code{coredir="F:"} if you want to put the core's folder and files on a USB drive loaded under F:.
 Thinner (and thus more) sections will result in smoother age-models, but too many sections can cause `run-away' models.}
 
-\item{phi.shape}{Shape parameter of the prior gamma distribution used for the influx of $^{210}Pb$ to the sediment, default \code{phi.shape=2}.}
+\item{phi.shape}{Shape parameter of the prior gamma distribution used for the influx of Pb-210 to the sediment, default \code{phi.shape=2}.}
 
-\item{phi.mean}{Mean parameter of the prior gamma distribution used for the influx of $^{210}Pb$ to the sediment, default \code{phi.mean=50}.}
+\item{phi.mean}{Mean parameter of the prior gamma distribution used for the influx of Pb-210 to the sediment, default \code{phi.mean=50}.}
 
-\item{s.shape}{Shape parameter of the prior gamma distribution used for the supported $^{210}Pb$ to the sediment, default \code{s.shape=5}.}
+\item{s.shape}{Shape parameter of the prior gamma distribution used for the supported Pb-210 to the sediment, default \code{s.shape=5}.}
 
-\item{s.mean}{Mean parameter of the prior gamma distribution used for the supported $^{210}Pb$ to the sediment, default \code{s.mean=10}.}
+\item{s.mean}{Mean parameter of the prior gamma distribution used for the supported Pb-210 to the sediment, default \code{s.mean=10}.}
 
 \item{Al}{Parameter used to limit the chronologies described in Aquino-Lopez et al. (2018) for the minimum distinguishable unsupported activity; default \code{Al=0.1}.}
 
 \item{date.sample}{Date at which the core was measured for Pb-120. This date will be used as a surface date and is assumed to have no uncertainty, \code{date.sample=NA}. If the date is not provided (in the .csv file or as \code{date.sample}), Plum will ask for it.}
 
-\item{n.supp}{This value will delete n.supp data points from the deepest part of the core, and these points will then be used exclusively to estimate the supported activity. If this option is used, a constant supported $^{210}Pb$ will be assumed, \code{n.supp=-1}.}
+\item{n.supp}{This value will delete n.supp data points from the deepest part of the core, and these points will then be used exclusively to estimate the supported activity. If this option is used, a constant supported Pb-210 will be assumed, \code{n.supp=-1}.}
 
 \item{radon.case}{How to use radon measurements if they are provided in the core's .csv file. 0 = do not use radon (e.g., if not measured), 1 = assume constant radon, 2 = assume varying radon and use the radon measurements as individual estimates of supported Pb-210.}
 
-\item{Bqkg}{This variable indicates whether total $^{210}Pb$ is expressed in Bq/kg (default; \code{Bqkg=TRUE}) or dpm/g if set to FALSE.}
+\item{Bqkg}{This variable indicates whether total Pb-210 is expressed in Bq/kg (default; \code{Bqkg=TRUE}) or dpm/g if set to FALSE.}
 
 \item{seed}{Seed used for C++ executions; if it is not assigned then the seed is set by system. Default \code{seed=NA}.}
 
@@ -135,11 +136,11 @@ Its shape is set by acc.shape (default \code{acc.shape=1.5}; higher values resul
 which can be changed to, e.g., 5, 10 or 50 for different kinds of deposits). Multiple values can be given in case of hiatuses or boundaries, e.g., Plum(hiatus.depths=23, acc.mean=c(5,20))}
 
 \item{mem.strength}{The prior for the memory (dependence of accumulation rate between neighbouring depths) is a beta distribution, which looks much like the gamma distribution.
-but its values are always between 0 (no assumed memory) and 1 (100\% memory). Its default settings of \code{mem.strength=4}
+but its values are always between 0 (no assumed memory) and 1 (100\% memory). Its default settings of \code{mem.strength=10}
 (higher values result in more peaked shapes) allow for a large range of posterior memory values.}
 
 \item{mem.mean}{The prior for the memory is a beta distribution, which looks much like the gamma distribution but
-its values are always between 0 (no assumed memory) and 1 (100\% memory). Its default settings of \code{mem.mean=0.7}
+its values are always between 0 (no assumed memory) and 1 (100\% memory). Its default settings of \code{mem.mean=0.5}
 allow for a large range of posterior memory values.}
 
 \item{boundary}{The assumed depths of any boundary, which divides sections of different accumulation rate regimes (e.g., as indicated by major change in the stratigraphy). No hiatus is assumed between these sections, and memory is reset crossing the boundary. Different accumulation priors can be set for the sections above and below the boundary, e.g., \code{acc.mean=c(5, 20)}. See also \code{hiatus.depths}, \code{mem.mean}, \code{acc.mean} and \code{acc.shape}. Setting many boundaries might not work, and having more than one boundary per model section (see \code{'thick'}) might not work either.}
@@ -165,7 +166,7 @@ allow for a large range of posterior memory values.}
 \item{cc4}{Use an alternative curve (3 columns: cal BP, 14C age, error, separated by white spaces and saved as a plain-text file). See \code{ccdir}.}
 
 \item{ccdir}{Directory where the calibration curves for C14 dates \code{cc} are located. By default \code{ccdir=""} since they are loaded into R's memory.
-For example, use \code{ccdir="."} to choose current working directory, or \code{ccdir="Curves/"} to choose sub-folder \code{Curves/}. Note that all calibration curves should reside in the same directory. If you want to add a custom-built curve, put it in the directory where the default calibration curves are (probably \code{list.files(paste0(.libPaths(), "/rplum/extdata/Curves/"))}).
+For example, use \code{ccdir="."} to choose current working directory, or \code{ccdir="Curves/"} to choose sub-folder \code{Curves/}. Note that all calibration curves should reside in the same directory. If you want to add a custom-built curve, put it in the directory where the default calibration curves are (probably \code{list.files(paste0(.libPaths(), "/IntCal/extdata/"))}).
 Alternatively produce a new folder, and add your curve as well as the default calibration curves there (cc1, cc2 and cc3; e.g., \code{write.table(copyCalibrationCurve(1), "./3Col_intcal20.14C", sep="\t")}.)}
 
 \item{postbomb}{Use a postbomb curve for negative (i.e. postbomb) 14C ages. \code{0 = none, 1 = NH1, 2 = NH2, 3 = NH3, 4 = SH1-2, 5 = SH3}}
@@ -225,6 +226,8 @@ try running your core again with \code{remember=FALSE}, or, start cleanly by typ
 
 \item{cutoff}{Avoid plotting very low probabilities of date distributions (default \code{cutoff=0.001}).}
 
+\item{rounded}{Rounding of calendar years. Defaults to 1 decimal.}
+
 \item{plot.pdf}{Produce a pdf file of the age-depth plot. Defaults to \code{plot.pdf=TRUE} after a Plum run.}
 
 \item{dark}{Darkness of the greyscale age-depth model. The darkest grey value is \code{dark=1} by default.
@@ -273,32 +276,28 @@ Plum also needs the date of sampling, in AD (\code{date.sample}).
 }
 \examples{
 \donttest{
-  Plum(ask=FALSE, coredir=tempfile(), date.sample=2018.5, radon.case=0, n.supp=3)
+  Plum(ask=FALSE, run=FALSE, coredir=tempfile(), date.sample=2018.5, radon.case=0, n.supp=3)
+  agedepth(age.res=50, d.res=50)
 }
 }
 \references{
 Aquino-Lopez, M.A., Blaauw, M., Christen, J.A., Sanderson, N., 2018. Bayesian analysis of 210Pb dating. Journal of Agricultural, Biological, and Environmental Statistics 23, 317-333
 
 Blaauw, M. and Christen, J.A., Flexible paleoclimate age-depth models using an autoregressive gamma process. Bayesian Analysis 6 (2011), no. 3, 457--474.
-\url{https://projecteuclid.org/euclid.ba/1339616472}
 
 Christen, J.A., Perez E., S., 2010. A new robust statistical model for radiocarbon data. Radiocarbon 51, 1047-1059.
 
-Reimer et al., 2020. The IntCal20 Northern Hemisphere radiocarbon age calibration curve (0–55 cal kBP). Radiocarbon 62. doi: 10.1017/RDC.2020.41
-
 Hogg et al. 2020 SHCal20 Southern Hemisphere calibration, 0-55,000 years cal BP. Radiocarbon 62. doi: 10.1017/RDC.2020.59
-
-Hughen et al. 2020 Marine20-the marine radiocarbon age calibration curve (0-55,000 cal BP). Radiocarbon 62. doi: 10.1017/RDC.2020.68.
 
 Hua, Q., Barbetti, M., Rakowski, A.Z., 2013. Atmospheric radiocarbon for the period 1950-2010.
 Radiocarbon 55(4), <doi:10.2458/azu_js_rc.v55i2.16177>.
 
-Jones, V.J., Stevenson, A.C., Battarbee, R.W., 1989. Acidification of lakes in Galloway, south west Scotland
-- a diatom and pollen study of the post-glacial history of the Round Loch of Glenhead.
+Hughen et al. 2020 Marine20-the marine radiocarbon age calibration curve (0-55,000 cal BP). Radiocarbon 62. doi: 10.1017/RDC.2020.68.
+
+Jones, V.J., Stevenson, A.C., Battarbee, R.W., 1989. Acidification of lakes in Galloway, south west Scotland - a diatom and pollen study of the post-glacial history of the Round Loch of Glenhead.
 Journal of Ecology 77: 1-23.
-}
-\seealso{
-\url{http://www.qub.ac.uk/chrono/blaauw/manualBacon_2.3.pdf}
+
+Reimer et al., 2020. The IntCal20 Northern Hemisphere radiocarbon age calibration curve (0–55 cal kBP). Radiocarbon 62. doi: 10.1017/RDC.2020.41
 }
 \author{
 Maarten Blaauw, J. Andres Christen, Marco A. Aquino L.
