@@ -1,4 +1,53 @@
-#' @name agedepth
+# tmp file to repair bugs in rbacon 2.5.5
+
+# to plot greyscale/ghost graphs of the age-depth model
+Plum.agedepth.ghost <- function(set=get('info'), d.min=set$d.min, d.max=set$d.max, BCAD=set$BCAD, rotate.axes=FALSE, d.res=400, age.res=400, rgb.res=100, dark=c(), rgb.scale=c(0,0,0), cutoff=0.001, age.lim) {
+  dseq <- seq(d.min, d.max, length=d.res)
+  if(set$isplum) # plum has a strange feature with a grey shape appearing
+    dseq <- dseq[-1] # at dmin. Thus removing the first depth
+  if(length(set$slump) > 0) {
+    d.inside <- c()
+    for(i in 1:nrow(set$slump)) {
+      inside <- which(dseq < max(set$slump[i,]))
+      inside <- which(dseq[inside] > min(set$slump[i,]))
+      d.inside <- c(d.inside, inside)
+    }
+  dseq <- dseq[-d.inside]
+  }
+
+  Bacon.hist(dseq, set, BCAD=BCAD, calc.range=FALSE, draw=FALSE)
+  hists <- get('hists')
+  scales <- array(0, dim=c(length(dseq), age.res))
+  ageseq <- seq(min(age.lim), max(age.lim), length=age.res)
+  for(i in 1:length(hists)) { # was length(dseq)
+  if(length(hists[[i]]) < 7)
+      ages <- sort(unlist(hists[[i]])) else {
+       ages <- seq(hists[[i]]$th0, hists[[i]]$th1, length=hists[[i]]$n)
+       if(length(!is.na(ages)) > 0)
+        scales[i,] <- approx(ages, hists[[i]]$counts, ageseq, rule=2)$y
+     }
+  }
+  minmax <- hists[[length(hists)]]$min
+  maxmax <- hists[[length(hists)]]$max
+  scales <- scales/maxmax # normalise to the height of most precise age estimate
+  if(length(dark) == 0)
+    dark <- 10 * minmax/maxmax
+  scales[scales > dark] <- dark
+  scales <- scales/max(scales) # May 2021
+  dseq <- sort(dseq)
+  cols <- rgb(rgb.scale[1], rgb.scale[2], rgb.scale[3], seq(0,1, length=rgb.res))
+  
+  scales[scales<cutoff] <- NA # so that pixels with probs very close to 0 are not plotted as white but empty
+  
+  if(rotate.axes)
+    image(ageseq, dseq, t(scales), add=TRUE, col=cols, useRaster=FALSE) else
+      image(dseq, ageseq, scales, add=TRUE, col=cols, useRaster=FALSE)
+}
+
+
+
+
+#' @name Plum.agedepth
 #' @title Plot an age-depth model
 #' @description Plot the age-depth model of a core.
 #' @details After loading a previous run, or after running either the \link{scissors} or \link{thinner} command, plot the age-model
@@ -60,6 +109,8 @@
 #' @param pbmeasured.col Colour of the measured 210Pb values (default \code{pbmeasured.col="blue"}). Draws rectangles of the upper and lower depths as well as the Pb values with 95 percent error ranges. 
 #' @param pb.lim Axis limits for the Pb-210 data. Calculated automatically by default (\code{pblim=c()}).
 #' @param supp.col Colour of supported Pb-210. Defaults to purple, because why not.
+#' @param plot.tail The depth axis can extend to all Pb measurements (\code{plot.tail=TRUE}), or leave out the ones where background has been reached.
+#' @param remove.tail Whether or not to remove the tail measurements when plotting. Sometimes automated removal might go wrong, so then this option can be used to avoid removing the tail measurements. Quite similar to plot.tail.
 #' @param hiatus.col The colour of the depths of any hiatuses. Default \code{hiatus.col=grey(0.5)}.
 #' @param hiatus.lty The line type of the depths of any hiatuses. Default \code{hiatus.lty=12}.
 #' @param rgb.scale The function to produce a coloured representation of all age-models. Needs 3 values for the intensity of red, green and blue. Defaults to grey-scales: \code{rgb.scale=c(0,0,0)}, but could also be, say, scales of red (\code{rgb.scale=c(1,0,0)}). 
@@ -86,7 +137,8 @@
 #' @param toppanel.fontsize Font size of the top panels, relative to R's standard size. Defaults to \code{prior.fontsize=0.9}.
 #' @param xaxt Whether or not to plot the x-axis. Can be used to adapt axes after a plot. See ?par for other options.
 #' @param yaxt Whether or not to plot the y-axis. Can be used to adapt axes after a plot. See ?par for other options.
-#' @param plot.pb Plot the 210Pb data. Defaults to \code{plot.pb=TRUE}.
+#' @param plot.pb Plot the 210Pb data (if present). Defaults to \code{plot.pb=TRUE}.
+#' @param pb.lty Line type of measured Pb-210 data.
 #' @param plot.pdf Produce a pdf file of the age-depth plot.
 #' @param model.only By default, panels showing the MCMC iterations and the priors and posteriors for accumulation rate and memory are plotted above the main age-depth model panel. This can be avoided by supplying \code{model.only=TRUE}. Note however that this removes relevant information to evaluate the age-depth model, so we do recommend to present age-models together with these upper panels.
 #' @param dates.only By default, the age-depth model is plotted on top of the dates. This can be avoided by supplying \code{dates.only=TRUE}.
@@ -94,65 +146,71 @@
 #' @author Maarten Blaauw, J. Andres Christen
 #' @return A plot of the age-depth model, and estimated ages incl. confidence ranges for each depth.
 #' @examples
+#' \dontshow{
 #'   Plum(run=FALSE, ask=FALSE, coredir=tempfile())
-#'   agedepth(age.res=50, d.res=50, d.by=1)
+#'   Plum.agedepth(yr.res=50, d.res=50, d.by=10)
+#'  }
+#' \donttest{
+#'   Plum(ask=FALSE, coredir=tempfile())
+#'   Plum.agedepth()
+#' }
 #' @export
-agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, age.unit="yr", unit=depth.unit, d.lab=c(), age.lab=c(), yr.lab=age.lab, kcal=FALSE, acc.lab=c(), d.min=c(), d.max=c(), d.by=c(), depths=set$depths, depths.file=FALSE, age.min=c(), yr.min=age.min, age.max=c(), yr.max=age.max, hiatus.option=1, dark=c(), prob=set$prob, rounded=c(), d.res=400, age.res=400, yr.res=age.res, date.res=100, rotate.axes=FALSE, rev.age=FALSE, rev.yr=rev.age, rev.d=FALSE, maxcalc=500, height=1, calheight=1, mirror=TRUE, up=TRUE, cutoff=.1, plot.range=TRUE, range.col=grey(.5), range.lty="12", mn.col="red", mn.lty="12", med.col=NA, med.lty="12", C14.col=rgb(0,0,1,.35), C14.border=rgb(0,0,1,.5), cal.col=rgb(0,.5,.5,.35), cal.border=rgb(0,.5,.5,.5), dates.col=c(), pb.background=.5, pbmodelled.col=function(x) rgb(0,0,1,.5*x), pbmeasured.col="blue", pb.lim=c(), supp.col="purple", hiatus.col=grey(0.5), hiatus.lty="12", rgb.scale=c(0,0,0), rgb.res=100, slump.col=grey(0.8), normalise.dists=TRUE, same.heights=FALSE, cc=set$cc, title=set$core, title.location="topleft", title.size=1.5, after=set$after, bty="l", mar.left=c(3,3,1,1), mar.middle=c(3,0,1,.5), mar.right=c(3,0,1,1), mar.main=c(3,3,1,1), righthand=3, mgp=c(1.7,.7,.0), xaxs="r", yaxs="i", prior.ticks="n", prior.fontsize=0.9, toppanel.fontsize=0.9, xaxt="s", yaxt="s", plot.pb=TRUE, plot.pdf=FALSE, dates.only=FALSE, model.only=FALSE, verbose=TRUE) {
-  # Load the output, if it exists
+Plum.agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, age.unit="yr", unit=depth.unit, d.lab=c(), age.lab=c(), yr.lab=age.lab, kcal=FALSE, acc.lab=c(), d.min=c(), d.max=c(), d.by=c(), depths=set$depths, depths.file=FALSE, age.min=c(), yr.min=age.min, age.max=c(), yr.max=age.max, hiatus.option=1, dark=c(), prob=set$prob, rounded=c(), d.res=400, age.res=400, yr.res=age.res, date.res=100, rotate.axes=FALSE, rev.age=FALSE, rev.yr=rev.age, rev.d=FALSE, maxcalc=500, height=1, calheight=1, mirror=TRUE, up=TRUE, cutoff=.1, plot.range=TRUE,  range.col=grey(.5), range.lty="12", mn.col="red", mn.lty="12", med.col=NA, med.lty="12", C14.col=rgb(0,0,1,.35), C14.border=rgb(0,0,1,.5), cal.col=rgb(0,.5,.5,.35), cal.border=rgb(0,.5,.5,.5), dates.col=c(), pb.background=.5, pbmodelled.col=function(x) rgb(0,0,1,.5*x), pbmeasured.col="blue", pb.lim=c(), supp.col="purple", plot.tail=TRUE, remove.tail=TRUE, hiatus.col=grey(0.5), hiatus.lty="12", rgb.scale=c(0,0,0), rgb.res=100, slump.col=grey(0.8), normalise.dists=TRUE, same.heights=FALSE, cc=set$cc, title=set$core, title.location="topleft", title.size=1.5, after=set$after, bty="l", mar.left=c(3,3,1,1), mar.middle=c(3,0,1,.5), mar.right=c(3,1,1,1), mar.main=c(3,3,1,1), righthand=3, mgp=c(1.7,.7,.0), xaxs="r", yaxs="i", prior.ticks="n", prior.fontsize=0.9, toppanel.fontsize=0.9, xaxt="s", yaxt="s", plot.pb=TRUE, pb.lty=1, plot.pdf=FALSE, dates.only=FALSE, model.only=FALSE, verbose=TRUE) {
+# Load the output, if it exists
   outp <- paste0(set$prefix, ".out")
   if(file.exists(outp))
-    set <- Bacon.AnaOut(outp, set)
+    #set <- Bacon.AnaOut(outp, set)
+    set <- tmpBacon.AnaOut(outp, set) # tmp May 21
 
   # Plum-specific
   if(set$isplum) {
-    outPlum <- paste0(set$prefix, "_plum.out")
+    outPlum <- paste(set$prefix, "_plum.out", sep="")
     if(file.exists(outPlum))
-      set <- Plum.AnaOut(outPlum, set)
+      set <- tmpPlum.AnaOut(outPlum, set) # tmp May 21
     assign_to_global("info", set)
 
-  # sometimes runs don't go well, indicated by a very high posterior for memory
+    # sometimes runs don't go well, with the age-model totally lost. This is indicated by a very peaked posterior for memory, very close to 1
     if(mn <- mean(set$output[,set$K+2]) > 0.95)
       if(mn > set$mem.mean)
         message("\nWarning, this run has a very high posterior memory (", round(mn, 2), ") and probably didn't go very well. Please run again\n")
-    bg <- background(set) # calculate which Pb data have likely reached background
+    bg <- tmpbackground(set) # calculate which Pb data have likely reached background. using tmp function because radon.case was renamed to ra.case but not yet in rbacon
     set$background <- bg
   }
-  
 
+  set$BCAD <- BCAD # tmp May 2021
   # Adapt ages of sections which contain hiatuses
   if(!is.na(set$hiatus.depths[1]))
     set <- hiatus.slopes(set, hiatus.option)
    assign_to_global("info", set)
 
+  oldpar <- par(no.readonly = TRUE)
+  #on.exit(par(oldpar))
+  newpar <- par(mar=mar.main, mgp=mgp)
+  
   if(!model.only) { 
-    oldpar <- par(mar=mar.left, bty=bty, mgp=mgp, xaxs=xaxs, yaxs=yaxs)
+    newpar <- par(mar=mar.left, bty=bty, mgp=mgp, xaxs=xaxs, yaxs=yaxs)
     ifelse(set$isplum, pn <- c(1:5, rep(6,5)), pn <- c(1:3, rep(4,3)))
     if(!is.na(set$hiatus.depths[1]))
       if(is.na(set$boundary[1]))
         pn <- c(1:4, rep(5,4))
     layout(matrix(pn, nrow=2, byrow=TRUE), heights=c(.3,.7))
     PlotLogPost(set, 0, set$Tr, xaxs=xaxs, yaxs=yaxs, panel.size=toppanel.fontsize) # convergence information
-    par(mar=mar.middle) # reduce white space
+    newpar <- par(mar=mar.middle) # reduce white space
     #on.exit(par(oldpar))
     PlotAccPost(set, depth.unit=depth.unit, age.unit=age.unit, xaxs=xaxs, yaxs=yaxs, yaxt=prior.ticks, prior.size=prior.fontsize, panel.size=toppanel.fontsize)
-    if(is.na(set$hiatus.depths[1]) || !set$isplum) # then no further plots at top panel
-      par(mar=mar.right)
     PlotMemPost(set, set$core, set$K, "", set$mem.strength, set$mem.mean, ds=1, thick=set$thick, xaxs=xaxs, yaxs=yaxs, yaxt=prior.ticks, prior.size=prior.fontsize, panel.size=toppanel.fontsize)
-    if(!is.na(set$hiatus.depths[1])) {
-      if(!set$isplum)
-        par(mar=mar.right)
+    if(!is.na(set$hiatus.depths[1]))
       if(is.na(set$boundary[1]))
-        PlotHiatusPost(set, set$hiatus.max, xaxs=xaxs, yaxs=yaxs, yaxt=prior.ticks, prior.size=prior.fontsize, panel.size=toppanel.fontsize)
-      }
+         PlotHiatusPost(set, set$hiatus.max, xaxs=xaxs, yaxs=yaxs, yaxt=prior.ticks, prior.size=prior.fontsize, panel.size=toppanel.fontsize)
     if(set$isplum) {
        PlotPhiPost(set, xaxs=xaxs, yaxs=yaxs, yaxt=prior.ticks, prior.size=prior.fontsize, panel.size=toppanel.fontsize)
        if(set$nPs > 1)
          prior.ticks <- "s" # because with varying supported Pb, the y-axis is important
        par(mar=mar.right)
        PlotSuppPost(set, xaxs=xaxs, yaxs=yaxs, yaxt=prior.ticks, prior.size=prior.fontsize, panel.size=toppanel.fontsize)
-       mar.main[4] <- mar.main[4] + righthand # to enable space for righthand axis
+       mar.main[4] <- mar.main[4] + righthand # to enable space for righthand axis of main plot
     }
-    par(mar=mar.main)
+    par(mar=mar.main) # new May 2021
   }
 
   # calculate and plot the ranges and 'best' estimates for each required depth
@@ -182,14 +240,15 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
   for(i in set$slump)
     d <- sort(unique(c(i+after, i, d)))
 
-  if(set$isplum)
-    if(set$radon.case == 0)
-      d <- d[which(d <= max(set$detsOrig[,2]))]
+  if(set$isplum) # new May 2021
+    if(set$ra.case == 0)
+      if(!set$hasBaconData) # new May 2021
+        d <- d[which(d <= max(set$detsOrig[,2]))]
 
   if(verbose)
     message("Calculating age ranges...\n")
   modelranges <- c()
-  ranges <- Bacon.rng(d, set, BCAD=BCAD, prob=prob)
+  ranges <-  Bacon.rng(d, set, BCAD=BCAD, prob=prob)
   d.rng <- d
   # calculate calendar axis limits
   modelranges <- range(ranges[!is.na(ranges)])
@@ -201,14 +260,14 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
     if(BCAD)
       dateranges <- range(dateranges, 1950-dates[[i]][,1], na.rm=TRUE) else
         dateranges <- range(dateranges, dates[[i]][,1], na.rm=TRUE)
-  } else dateranges <- modelranges # plum with no additional dates
+  } else dateranges <- modelranges # assuming plum with no additional dates
 
   if(length(age.min) == 0)
     age.min <- min(modelranges, dateranges)
   if(length(age.max) == 0)
     age.max <- max(modelranges, dateranges)
   if(set$isplum) 
-    age.lim <- extendrange(c(min(ranges), max(ranges)), f=0.01) else
+    age.lim <- extendrange(c(min(modelranges, dateranges), max(modelranges, dateranges)), f=0.01) else
       age.lim <- extendrange(c(age.min, age.max), f=0.01)
 
   if(BCAD)
@@ -220,12 +279,27 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
     d.lim <- d.lim[2:1]
 
   if(length(d.lab) == 0)
-    d.lab <- paste0("Depth (", depth.unit, ")")
+    d.lab <- paste("Depth (", depth.unit, ")", sep="")
   if(length(age.lab) == 0)
     age.lab <- ifelse(BCAD, "BC/AD", ifelse(kcal, "kcal BP", paste("cal", age.unit, "BP")))
 
+#  if(set$isplum) # removed May 2021 because this is already done further up
+#    mar.main[4] <- mar.main[4] + righthand # to enable space for righthand axis
+#  par(mar=mar.main)
+  #on.exit(par(oldpar))
+    
   if(kcal)
     ifelse(rotate.axes, xaxt <- "n", yaxt <- "n")
+#  if(set$isplum)
+#     oldpar <- par(mar=c(3,3,1,3)) else {
+#      oldpar <- par(mar=c(3,3,1,1)) # no need for righthand axis; should be mar.right?
+
+  if(set$isplum)
+    if(remove.tail)
+      if(!plot.tail) { # then only plot measurements above background
+        above <- which(set$background < pb.background)
+        d.lim[which(d.lim==max(d.lim))] <- max(set$dets[above,4])
+      }
 
   if(rotate.axes)
     plot(0, type="n", ylim=d.lim, xlim=age.lim, ylab=d.lab, xlab=age.lab, bty="n", xaxt=xaxt, yaxt=yaxt, mar=mar.main) else
@@ -233,18 +307,26 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
   if(kcal)
     axis(ifelse(rotate.axes, 1, 2), pretty(age.lim), pretty(age.lim/1e3))
 
-  if(set$isplum)
+  if(set$isplum) { # new May 2021
+    top <- min(set$dets[,4]-set$dets[,5])
+    if(d.min > top)
+      d.min <- top # because the top 210Pb-dated depth should be at or below d.min
     if(!set$hasBaconData) { # needs more work
       above <- which(set$background < pb.background)
-      d.max <- max(set$dets[above,4]) # cut depths that have reached background
-      ranges <- ranges[which(d.rng <= d.max),]
-      d <- d[which(d <= d.max)]
+      dmax <- max(set$dets[above,4]) # cut depths that have reached background
+      if(remove.tail)
+        if(!is.infinite(dmax)) {
+          ranges <- ranges[which(d.rng <= dmax),]
+          d <- d[which(d <= dmax)]
+          d.max <- dmax
+        }
     }
+  }
 
   if(!dates.only) {
     if(verbose)
       message("Preparing ghost graph... ")
-    agedepth.ghost(set, rotate.axes=rotate.axes, d.max=d.max, BCAD=BCAD, d.res=d.res, age.res=age.res, rgb.res=rgb.res, dark=dark, rgb.scale=rgb.scale, age.lim=age.lim)
+     Plum.agedepth.ghost(set, rotate.axes=rotate.axes, d.min=d.min, d.max=d.max, BCAD=BCAD, d.res=d.res, age.res=age.res, rgb.res=rgb.res, dark=dark, rgb.scale=rgb.scale, age.lim=age.lim)
   }
 
   if(length(set$slump) > 0 )
@@ -253,16 +335,26 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
         rect(min(age.lim)-1e3, set$slump[i,1], max(age.lim)+1e3, set$slump[i,2], col=slump.col, border=slump.col) else
           rect(set$slump[i,1], min(age.lim)-1e3, set$slump[i,2], max(age.lim)+1e3, col=slump.col, border=slump.col)
 
-  if(!set$isplum)
-    calib.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, same.heights=same.heights) else {
-      if(set$hasBaconData)
-        calib.plumbacon.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, normalise.dists=normalise.dists, same.heights=same.heights)
-      if(plot.pb)
-        draw.pbmodelled(set, BCAD=BCAD, rotate.axes=rotate.axes, age.lim=age.lim, d.lim=d.lim, pbmodelled.col=pbmodelled.col, pbmeasured.col=pbmeasured.col, pb.lim=pb.lim, supp.col=supp.col, mgp=mgp)
-    }
+  if(set$isplum) {
+    if(set$hasBaconData)
+      calib.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, same.heights=same.heights)
+    if(plot.pb)
+      draw.pbmodelled(set, BCAD=BCAD, rotate.axes=rotate.axes, age.lim=age.lim, d.lim=c(d.min, d.max), pbmodelled.col=pbmodelled.col, pbmeasured.col=pbmeasured.col, pb.lim=pb.lim, supp.col=supp.col, mgp=mgp, pb.lty=pb.lty)
+  } else
+    calib.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, same.heights=same.heights)
+
+
+#   if(!set$isplum)
+#     calib.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, same.heights=same.heights) else {
+#       if(set$hasBaconData)
+#         calib.plumbacon.plot(set, BCAD=BCAD, cc=cc, rotate.axes=rotate.axes, height=height, calheight=calheight, mirror=mirror, up=up, date.res=date.res, cutoff=cutoff, C14.col=C14.col, C14.border=C14.border, cal.col=cal.col, cal.border=cal.border, dates.col=dates.col, new.plot=FALSE, normalise.dists=normalise.dists, same.heights=same.heights)
+#       if(plot.pb)
+#         draw.pbmodelled(set, BCAD=BCAD, rotate.axes=rotate.axes, age.lim=age.lim, d.lim=c(d.min, d.max), pbmodelled.col=pbmodelled.col, pbmeasured.col=pbmeasured.col, pb.lim=pb.lim, supp.col=supp.col, mgp=mgp, pb.lty=pb.lty)
+#   }
 
   legend(title.location, title, bty="n", cex=title.size)
   box(bty=bty)
+
   hiatus.depths <- set$hiatus.depths
   if(!is.na(set$boundary[1]))
     hiatus.depths <- set$boundary
@@ -303,9 +395,9 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
 
   if(plot.pdf)
     if(names(dev.cur()) != "null device")
-      dev.copy2pdf(file=paste0(set$prefix, ".pdf"))
+      dev.copy2pdf(file=paste(set$prefix, ".pdf", sep=""))
 
-  write.table(set$ranges, paste0(set$prefix, "_ages.txt"), quote=FALSE, row.names=FALSE, sep="\t")
+  write.table(set$ranges, paste(set$prefix, "_ages.txt", sep=""), quote=FALSE, row.names=FALSE, sep="\t")
   rng <- abs(round(set$ranges[,3]-set$ranges[,2], rounded))
   min.rng <- d[which(rng==min(rng, na.rm=TRUE))]
   max.rng <- d[which(rng==max(rng, na.rm=TRUE))]
@@ -319,20 +411,17 @@ agedepth <- function(set=get('info'), BCAD=set$BCAD, depth.unit=set$depth.unit, 
     if(!dates.only)
       message("\nMean ", 100*prob, "% confidence ranges ", round(mean(rng), rounded), " ", age.unit, ", min. ",
         min(rng), " ", min.rng, ", max. ", max(rng), " ", max.rng)
-    if(set$isplum) { 
-	  if(set$radon.case == 2) {
-        if(set$radon.case == 2)
-          message("we're still working on estimating automatically when background is reached within radon.case 2") else {
+    if(set$isplum) {
       below <- which(bg > pb.background)
-      if(length(below) > 0) {
+      if(length(below) == 0)
+        message("\nIt seems that the Pb-measurements haven't reached background") else {
         message("Pb-210 likely at or below detection limit from ", min(set$dets[below,4]), " ", set$depth.unit, " depth onward: ")
         for(i in 1:length(below))
           cat(set$dets[below[i],4], " ", set$depth.unit, " (", round(100*bg[below[i]]), "%) ", sep="")
-          }
-        }
-      } 
+      }
     } else
-        overlap()
+        rbacon:::overlap()
     message("\n")  
   }
+  #par(oldpar) # tmp Jan 2021
 }

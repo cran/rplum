@@ -1,26 +1,48 @@
 
-validateDirectoryName <- function(dir) {
-  if(!dir.exists(dir))
-    dir.create(dir, recursive=TRUE)
-  dir <- suppressWarnings(normalizePath(dir))
-  lastchar <- substr(dir, nchar(dir), nchar(dir))
-  if(lastchar != "/" & lastchar != "\\" & lastchar != "" & lastchar != "." )
-    dir <- paste0(dir, "/") # does this work in Windows?
-  return(dir)
+
+### for running Plum, but is looked for by generic agedepth() function (through draw.pbmodelled()), so is included in the rbacon code
+#' @name tmpbackground
+#' @title calculate probabilities that Pb-210 data have reached background levels
+#' @description Checks which of the Pb-210 data most likely have reached background levels and thus are below the detection limit Al (probabilities between 0 and 1)
+#' @author Maarten Blaauw
+#' @return a list of probabilities for each Pb-210 data point
+#' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
+#' @param Al The detection limit. Default \code{Al=0.1}.
+#' @export
+tmpbackground <- function(set=get('info'), Al=set$Al) {
+  if(set$isplum) { # works with Pb-210 data only
+    pb <- 0
+    its <- nrow(set$output)
+#    dets <- set$detsOrig[,c(2,6,3)] # we need maxdepth, mindepth, density
+    dets <- set$dets[which(set$dets[,9] == 5),4:6] # should leave out any non-Pb data
+    ps <- cbind(set$ps)
+    for(i in 1:nrow(dets)) {
+      As <- A.modelled(dets[i,1]-dets[i,2], dets[i,1], dets[i,3])
+      if(set$ra.case == 2)
+        ps <- set$ps[,i] else
+          ps <- set$ps
+      bg <- which((As - ps) <= Al) # which modelled data are at or below the detection limit?
+      pb[i] <- length(bg) / its
+    }
+    return(pb)
+  }
+}
+
+# function to read plum output files into memory
+tmpPlum.AnaOut <- function(fnam, set=get('info')) {
+  out <- read.table(fnam)
+  n <- ncol(out)-1
+  set$nPs  <- n
+  set$TrPs <- nrow(out)
+  set$phi  <- out[,1]
+  set$ps   <- out[,2:(n+1)]
+  set
 }
 
 
 
-# function to load results in global environment
-# parameter position defaults to 1, which equals an assignment to the global environment
-assign_to_global <- function(key, val, pos=1) { # was pos=1
-  assign(key, val, envir=as.environment(pos) )
-}
-
-
-
-# function to read output files into memory
-Bacon.AnaOut <- function(fnam, set=get('info')) {
+# function to read output file into memory
+tmpBacon.AnaOut <- function(fnam, set=get('info')) {
   out <- read.table(fnam)
   n <- ncol(out)-1
   set$n <- n
@@ -42,66 +64,6 @@ Bacon.AnaOut <- function(fnam, set=get('info')) {
 #' @export
 Plum_runs <- function(coredir=get('info')$coredir)
   list.files(coredir)
-
-
-
-#' @name background
-#' @title calculate probabilities that Pb-210 data have reached background levels
-#' @description Checks which of the Pb-210 data most likely have reached background levels and thus are below the detection limit Al (probabilities between 0 and 1)
-#' @author Maarten Blaauw
-#' @return a list of probabilities for each Pb-210 data point
-#' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
-#' @param Al The detection limit. Default \code{Al=0.1}.
-#' @export
-background <- function(set=get('info'), Al=set$Al) {
-  if(set$isplum) { # works with Pb-210 data only
-    pb <- 0
-    its <- nrow(set$output)
-    dets <- set$dets[,4:6] # we need maxdepth, mindepth, density
-    ps <- cbind(set$ps)
-    if(ncol(ps) == 1) # constant supported assumed, radon.case 0 or 1
-      k <- rep(1, nrow(set$dets)) else
-        k <- 1:nrow(set$dets) # radon case 2
-    for(i in 1:length(k)) {
-      As <- A.modelled(dets[i,1]-dets[i,2], dets[i,1], dets[i,3])
-      bg <- which((As - ps[,k[i]]) <= Al) # which modelled data are at or below the detection limit?
-      pb[i] <- length(bg) / its
-    }
-    return(pb)
-  }
-}
-
-
-
-
-# If coredir is left empty, check for a folder named Cores in the current working directory, and if this doesn't exist, for a folder called Plum_runs (make this folder if it doesn't exist yet and if the user agrees).
-# Check if we have write access. If not, tell the user to provide a different, writeable location for coredir.
-assign_coredir <- function(coredir, core, ask=TRUE) {
-  if(coredir == "") {
-    if(dir.exists("Cores"))
-      coredir <- "Cores" else
-        if(dir.exists("Plum_runs"))
-          coredir <- "Plum_runs" else {
-            coredir <- "Plum_runs"
-            ans <- readline(message("I will create a folder called ", coredir, ", is that OK? (Y/n)  "))
-            ans <- tolower(substr(ans,1,1))[1]
-            if(ask)
-              if(ans == "y" || ans == "")
-                wdir <- dir.create(coredir, FALSE) else
-                  stop("No problem. Please provide an alternative folder location using coredir\n", call.=FALSE)
-            if(!wdir)
-              stop("cannot write into the current directory.\nPlease set coredir to somewhere where you have writing access, e.g. Desktop or ~.", call.=FALSE)
-        }
-  } else {
-    if(!dir.exists(coredir))
-        wdir <- dir.create(coredir, FALSE)
-      if(!dir.exists(coredir)) # if it still doesn't exist, we probably don't have enough permissions
-        stop("cannot write into the current directory.\nPlease set coredir to somewhere where you have writing access, e.g. Desktop or ~.", call.=FALSE)
-  }
-  coredir <- validateDirectoryName(coredir)
-  message("The run's files will be put in this folder: ", coredir, core, sep="")
-  return(coredir)
-}
 
 
 
@@ -155,7 +117,7 @@ check.equi <- function(dets, suggest=TRUE) {
 
 
 # read the 210Pb dets file
-read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=".", cc=1, Bqkg=TRUE, radon.case=c(), suggest=TRUE) {
+read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=".", cc=1, Bqkg=TRUE, ra.case=c(), suggest=TRUE) {
 
   # read the file. Removing the option to read and convert dat files because this is moot for Pb210
   csv.file <- paste0(coredir,  core, "/", core, ".csv")
@@ -187,8 +149,8 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
   plumdataColumn <- 4 # means of measurements
   stdColumn      <- 5 # their errors
   deltaColumn    <- 6 # sample thickness
-  radonColumn    <- 7 # if present
-  sdRadonColumn  <- 8 # if present
+  raColumn    <- 7 # if present
+  sdRaColumn  <- 8 # if present
 
   #check that depths are in ascending order
   if(min(diff(dets[,depthColumn])) < 0) {
@@ -196,7 +158,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
     dets <- dets[ order(dets[,depthColumn]),]
     changed <- TRUE
   }
-  date.infile <- NA; nsupp.infile <- NA; radoncase.infile <- NA #; Bqkg.infile <- NA
+  date.infile <- NA; nsupp.infile <- NA; racase.infile <- NA #; Bqkg.infile <- NA
   if(ncol(dets) == 6 || ncol(dets) == 8) # no additional information in file
     detsOrig <- dets else
       if(ncol(dets) == 7 || ncol(dets) == 9) { # additional information in file
@@ -210,16 +172,16 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
           if(!is.na(dets[2,n]))
             if(dets[2,n] != "")
               nsupp.infile <- dets[2,n]
-        if(length(dets[3,n]) > 0) # 3rd, which radon case to use to estimate supported
+        if(length(dets[3,n]) > 0) # 3rd, which radium case to use to estimate supported
           if(!is.na(dets[3,n]))
             if(dets[3,n] != "")
-              radoncase.infile <- dets[3,n]
+              racase.infile <- dets[3,n]
       } else
         stop(paste(csv.file, "should have between 6 and 9 columns. Please check."), call.=TRUE)
 
   date.asoption <- date.sample
   nsupp.asoption <- n.supp
-  radoncase.asoption <- radon.case
+  racase.asoption <- ra.case
   Bqkg.asoption <- Bqkg
 
   # now decide which options to use
@@ -252,99 +214,99 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
   } else
     date.sample <- choice(date.infile, date.asoption, "sampling date", "Please provide a date (in AD) for when the Pb210 samples were measured: ")
 
-  # Now test different scenarios. Only check n.supp if radon.case < 2?
-  if(ncol(dets) == 6) { # no radon, no information provided
-    if(length(radoncase.asoption) == 0)
-      message("No radon data, setting radon.case to 0, using tail data to estimate supported Pb-210") else {
-        if(radoncase.asoption != 0)
-          message("Setting radon.case to 0 as no radon data provided, using tail data to estimate supported Pb-210") else
-            message("No radon data, setting radon.case to 0")
+  # Now test different scenarios. Only check n.supp if ra.case < 2?
+  if(ncol(dets) == 6) { # no radium, no information provided
+    if(length(racase.asoption) == 0)
+      message("No radium-226 data, setting ra.case to 0, using tail data to estimate supported Pb-210") else {
+        if(racase.asoption != 0)
+          message("Setting ra.case to 0 as no radium-226 data provided, using tail data to estimate supported Pb-210") else
+            message("No radium-226 data, setting ra.case to 0")
         }
-    radon.case <- 0
+    ra.case <- 0
   }
 
-  if(ncol(dets) == 7) { # no radon, information provided (thanks!)
-    if(length(radoncase.asoption) == 0) {
-      if(length(radoncase.infile) == 0 || is.na(radoncase.infile) || radoncase.infile > 0)
-        message("Setting radon.case to 0 as no radon data provided, using tail data to estimate supported Pb-210 (radon.case 0)") else
-          message("No radon data, using tail data to estimate supported Pb-210 (radon.case 0)")
+  if(ncol(dets) == 7) { # no radium, information provided (thanks!)
+    if(length(racase.asoption) == 0) {
+      if(length(racase.infile) == 0 || is.na(racase.infile) || racase.infile > 0)
+        message("Setting ra.case to 0 as no radium-226 data provided, using tail data to estimate supported Pb-210 (ra.case 0)") else
+          message("No radium-226 data, using tail data to estimate supported Pb-210 (ra.case 0)")
       } else {
-          if(radoncase.asoption != 0)
-            message("Setting radon.case to 0 as no radon data provided, using tail data to estimate supported Pb-210 (radon.case 0)") else
-              message("No radon data, using tail data to estimate supported Pb-210 (radon.case 0)")
+          if(racase.asoption != 0)
+            message("Setting ra.case to 0 as no radium-226 data provided, using tail data to estimate supported Pb-210 (ra.case 0)") else
+              message("No radium-226 data, using tail data to estimate supported Pb-210 (ra.case 0)")
         }
-    radon.case <- 0
+    ra.case <- 0
   }
 
-  if(ncol(dets) == 8) { # radon, no information provided
-    if(length(radoncase.asoption) == 0) {
-      message("Radon data provided. Should I assume constant (radon.case 1) or varying (radon.case 2) supported Pb-210? Note that using radon.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radon data.")
-      ans <- readline(" Use radon.case (1 or 2):")
+  if(ncol(dets) == 8) { # radium, no information provided
+    if(length(racase.asoption) == 0) {
+      message("Radium-226 data provided. Should I assume constant (ra.case 1) or varying (ra.case 2) supported Pb-210? Note that using ra.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radium-226 data.")
+      ans <- readline(" Use ra.case (1 or 2):")
       if(ans == 1)
-        radon.case <- 1 else
+        ra.case <- 1 else
         if(ans == 2)
-          radon.case <- 2 else
-          stop("I do not understand this value for radon.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
+          ra.case <- 2 else
+          stop("I do not understand this value for ra.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
     } else {
-        if(radoncase.asoption == 1)
-          radon.case <- 1 else
-          if(radoncase.asoption == 2)
-            radon.case <- 2 else {
-              message("Radon data provided. Should I assume constant (radon.case 1) or varying (radon.case 2) supported Pb-210? Note that using radon.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radon data.")
-              ans <- readline("Use radon.case (1 or 2):")
+        if(racase.asoption == 1)
+          ra.case <- 1 else
+          if(racase.asoption == 2)
+            ra.case <- 2 else {
+              message("Radium-226 data provided. Should I assume constant (ra.case 1) or varying (ra.case 2) supported Pb-210? Note that using ra.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radium data.")
+              ans <- readline("Use ra.case (1 or 2):")
               if(ans == 1)
-                radon.case <- 1 else
+                ra.case <- 1 else
                 if(ans == 2)
-                  radon.case <- 2 else
-                    stop("I do not understand this value for radon.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
+                  ra.case <- 2 else
+                    stop("I do not understand this value for ra.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
             }
       }
   }
 
-  if(ncol(dets) == 9) { # radon, information provided (fun!)
-    if(length(radoncase.asoption) == 0) {
-      if(length(radoncase.infile) == 0 || is.na(radoncase.infile) || radoncase.infile == 0 || radoncase.infile == "") {
-        message("Radon data provided so radon.case cannot be 0 or empty. Should I assume constant (radon.case 1) or varying (radon.case 2) supported Pb-210? Note that using radon.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radon data. ")
-        ans <- readline("Use radon.case (1 or 2):")
+  if(ncol(dets) == 9) { # radium, information provided (fun!)
+    if(length(racase.asoption) == 0) {
+      if(length(racase.infile) == 0 || is.na(racase.infile) || racase.infile == 0 || racase.infile == "") {
+        message("Radium data provided so ra.case cannot be 0 or empty. Should I assume constant (ra.case 1) or varying (ra.case 2) supported Pb-210? Note that using ra.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radium-226 data. ")
+        ans <- readline("Use ra.case (1 or 2):")
         if(ans == 1)
-          radon.case <- 1 else
+          ra.case <- 1 else
           if(ans == 2)
-            radon.case <- 2 else
+            ra.case <- 2 else
               stop("I do not understand this answer. Please adapt the settings", call.=TRUE)
       } else
-        if(radoncase.infile == 1)
-          radon.case <- 1 else
-          if(radoncase.infile == 2)
-            radon.case <- 2 else
-              stop("I do not understand the radon case value in the .csv file. Please adapt", call.=TRUE)
+        if(racase.infile == 1)
+          ra.case <- 1 else
+          if(racase.infile == 2)
+            ra.case <- 2 else
+              stop("I do not understand the radium-226 case value in the .csv file. Please adapt", call.=TRUE)
     } else {
-      if(radoncase.asoption == 0) {
-        message("Radon data provided so radon.case cannot be 0. Should I assume constant (radon.case 1) or varying (radon.case 2) supported Pb-210? Note that using radon.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radon data.")
-        ans <- readline("Use radon.case (1 or 2):")
+      if(racase.asoption == 0) {
+        message("Radium-226 data provided so ra.case cannot be 0. Should I assume constant (ra.case 1) or varying (ra.case 2) supported Pb-210? Note that using ra.case 2 will greatly increase the computing time and should only be used when clear patterns are observed in the radium-226 data.")
+        ans <- readline("Use ra.case (1 or 2):")
         if(ans == 1)
-          radon.case <- 1 else
+          ra.case <- 1 else
           if(ans == 2)
-            radon.case <- 2 else
-              stop("I do not understand this value for radon.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
+            ra.case <- 2 else
+              stop("I do not understand this value for ra.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
       } else
-        if(radoncase.asoption == 1) {
-          message("radon.case 1")
-          radon.case <- 1
+        if(racase.asoption == 1) {
+          message("ra.case 1")
+          ra.case <- 1
         } else
-          if(radoncase.asoption == 2) {
-            message("radon.case 2")
-            radon.case <- 2
+          if(racase.asoption == 2) {
+            message("ra.case 2")
+            ra.case <- 2
           } else
-            stop("I do not understand this value for radon.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
+            stop("I do not understand this value for ra.case (should be 1 or 2). Please adapt the settings", call.=TRUE)
     }
   }
 
-  if(radon.case < 2) { # n.supp cannot be used if radon.case 2 (check with Marco that this is correct!)
-    if(radon.case == 1)
-      message("Besides using the radon data, the tail Pb-210 data can also be used to estimate supported Pb-210. ")
+  if(ra.case < 2) { # n.supp cannot be used if ra.case 2 (check with Marco that this is correct!)
+    if(ra.case == 1)
+      message("Besides using the radium data, the tail Pb-210 data can also be used to estimate supported Pb-210. ")
     n.supp <- choice(nsupp.infile, nsupp.asoption, "number of supported data", "",, check.equi(dets))
   }
-  if(radon.case == 2)
+  if(ra.case == 2)
     n.supp <- 0
 
   if(length(Bqkg) == 0 || !(Bqkg %in% c(0, 1))) {
@@ -353,16 +315,16 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
   }
 
   # now put the chosen options into the .csv file if they differ from what's in there already
-  choices <- c(date.sample, n.supp, radon.case, rep("", nrow(dets)-3)) # empty after line 4
+  choices <- c(date.sample, n.supp, ra.case, rep("", nrow(dets)-3)) # empty after line 4
   suggested.names <- c("labID", "depth(cm)","density(g/cm^3)","210Pb(Bq/kg)","sd(210Pb)","thickness(cm)", "226Ra(Bq/kg)", "sd(226Ra)", "settings")
-  if(radon.case == 0) # then no radon columns
+  if(ra.case == 0) # then no radium columns
    suggested.names <- suggested.names[-(7:8)]
 
   if(ncol(dets) %in% c(6,8)) { # no data provided in the .csv file
     changed <- TRUE
     dets <- cbind(dets, choices)
   } else {
-      current <- c(date.infile, nsupp.infile, radoncase.infile)
+      current <- c(date.infile, nsupp.infile, racase.infile)
       if(length(is.na(current)) > 0 || length(choices[1:4] == current) < 4) # then update .csv file
         changed <- TRUE
       dets[,ncol(dets)] <- choices
@@ -375,20 +337,20 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
 
   # now identify supported Pb-210 data
   if(ncol(detsOrig) == 6) { # then repeat the Pb210 columns again
-    radonColumn <- 4
-    sdRadonColumn <- 5
-    supportedData <- detsOrig[(nrow(detsOrig)-n.supp+1):nrow(detsOrig),c(radonColumn, sdRadonColumn, depthColumn, deltaColumn)]
+    raColumn <- 4
+    sdRaColumn <- 5
+    supportedData <- detsOrig[(nrow(detsOrig)-n.supp+1):nrow(detsOrig),c(raColumn, sdRaColumn, depthColumn, deltaColumn)]
     detsOrig <- detsOrig[1:(nrow(detsOrig)-n.supp),]
   } else
     if(ncol(detsOrig) == 8) { # columns 7 and 8 are supported data
-      radonColumn <- 7
-      sdRadonColumn <- 8
-      supportedData <- detsOrig[,c(radonColumn, sdRadonColumn, depthColumn, deltaColumn)]
-      detsOrig <- detsOrig[,-c(radonColumn,sdRadonColumn)]
+      raColumn <- 7
+      sdRaColumn <- 8
+      supportedData <- detsOrig[,c(raColumn, sdRaColumn, depthColumn, deltaColumn)]
+      detsOrig <- detsOrig[,-c(raColumn,sdRaColumn)]
 
       if(length(supportedData[is.na(supportedData)]) > 0) {
-        message("Missing values are detected; the radon case is set to 1.")
-        radon.case <- 1
+        message("Missing values are detected; the radium case is set to 1.")
+        ra.case <- 1
         elim <- c() # get rid of data with NAs
         for(i in 1:nrow(supportedData))
           if(length(is.na(supportedData[i,])) > 0)
@@ -398,19 +360,19 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
 
       if(length(n.supp) > 0)
         if(n.supp > 0) {
-          radonColumn <- 4
-          sdRadonColumn <- 5
-          tmp <- detsOrig[(nrow(detsOrig)-n.supp+1):(nrow(detsOrig)),c(radonColumn, sdRadonColumn, depthColumn, deltaColumn)]
+          raColumn <- 4
+          sdRaColumn <- 5
+          tmp <- detsOrig[(nrow(detsOrig)-n.supp+1):(nrow(detsOrig)),c(raColumn, sdRaColumn, depthColumn, deltaColumn)]
           names(tmp) <- colnames(supportedData)
-          supportedData <- rbind(supportedData, tmp) # combine radon data with tail of Pb-210 data
+          supportedData <- rbind(supportedData, tmp) # combine Ra-226 data with tail of Pb-210 data
           detsOrig <- detsOrig[1:(nrow(detsOrig)-n.supp),]
         }
 
     } else
-      if( n.supp > 0 ) { # 9 columns, so radon data and information provided, and n.supp to be added
-        radonColumn <- 4
-        sdRadonColumn <- 5
-        tmp <- detsOrig[(nrow(detsOrig)-n.supp+1):(nrow(detsOrig)),c(radonColumn, sdRadonColumn, depthColumn, deltaColumn)]
+      if( n.supp > 0 ) { # 9 columns, so radium data and information provided, and n.supp to be added
+        raColumn <- 4
+        sdRaColumn <- 5
+        tmp <- detsOrig[(nrow(detsOrig)-n.supp+1):(nrow(detsOrig)),c(raColumn, sdRaColumn, depthColumn, deltaColumn)]
         names(tmp) <- colnames(supportedData)
         supportedData <- rbind(supportedData, tmp)
         detsOrig <- detsOrig[1:(nrow(detsOrig)-n.supp),]
@@ -453,7 +415,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
       detsOrig[,2]-detsOrig[,6], detsOrig[,7]+detsOrig[,8],
       lty=3, border=2)
 
-  return(list(dets, supportedData, radon.case, date.sample, detsOrig, n.supp, Bqkg))
+  return(list(dets, supportedData, ra.case, date.sample, detsOrig, n.supp, Bqkg))
 }
 
 
@@ -481,12 +443,12 @@ Plum.cleanup <- function(set=get('info')) {
 
 
 
-# read in default values, values from previous run, any specified values, and report the desired one. Internal function.
+# read in default values, values from previous run, any specified values, and report the desired one. Internal function. Differs from Bacon.settings because it requires Pb-specific settings.
 .plum.settings <- function(core, coredir, dets, thick, remember=TRUE, d.min, d.max, d.by, depths.file,
   slump, acc.mean, acc.shape, mem.mean, mem.strength, boundary, hiatus.depths, hiatus.max, hiatus.shape,
   BCAD, cc, postbomb, cc1, cc2, cc3, cc4, depth.unit, normal, t.a, t.b, delta.R, delta.STD, prob,
   defaults, runname, ssize, dark, MinAge, MaxAge, cutoff, age.res, after, age.unit,
-  supportedData, date.sample, Al, phi.shape, phi.mean, s.shape, s.mean, radon.case, Bqkg, n.supp) {
+  supportedData, date.sample, Al, phi.shape, phi.mean, s.shape, s.mean, ra.case, Bqkg, n.supp) {
 
   vals <- list(d.min, d.max, d.by, depths.file, slump, acc.mean, acc.shape, mem.mean, mem.strength, boundary, hiatus.depths, hiatus.max, BCAD, cc, postbomb, cc1, cc2, cc3, cc4, depth.unit, normal, t.a, t.b, delta.R, delta.STD, prob, age.unit)
   valnames <- c("d.min", "d.max", "d.by", "depths.file", "slump", "acc.mean", "acc.shape", "mem.mean", "mem.strength", "boundary", "hiatus.depths", "hiatus.max", "BCAD", "cc", "postbomb", "cc1", "cc2", "cc3", "cc4", "depth.unit", "normal", "t.a", "t.b", "delta.R", "delta.STD", "prob", "age.unit")
@@ -527,20 +489,6 @@ Plum.cleanup <- function(set=get('info')) {
     if(length(prevfile) > 0) prevf <- TRUE
   }
 
-  #d.min <- extr(1); d.by <- extr(3); depths.file <- extr(4)
-  #slump <- extr(5); acc.mean <- extr(6);
-  #if(length(acc.shape) == 1)
-  #  acc.shape <- extr(7)
-  #mem.mean <- extr(8)
-  #mem.strength <- extr(9)
-  #boundary <- if(is.na(boundary)[1]) NA else sort(extr(10))
-  #hiatus.depths <- if(is.na(hiatus.depths)[1]) NA else sort(extr(11))
-  #hiatus.max <- extr(12)
-  #BCAD <- extr(13); cc <- extr(14); postbomb <- extr(15); cc1 <- extr(16, isnum=FALSE)
-  #cc2 <- extr(17, isnum=FALSE); cc3 <- extr(18, isnum=FALSE); cc4 <- extr(19, isnum=FALSE)
-  #depth.unit <- extr(20, isnum=FALSE); normal <- extr(21); t.a <- extr(22); t.b <- extr(23)
-  #delta.R <- extr(24); delta.STD <- extr(25); prob <- extr(26); age.unit <- extr(27, isnum=FALSE)
-
   if(is.na(d.min) || d.min=="NA")
     d.min <- min(dets[,4])
   if(is.na(d.max) || d.max=="NA")
@@ -574,7 +522,7 @@ Plum.cleanup <- function(set=get('info')) {
     delta.R, " #delta.R\n", delta.STD, " #d.STD\n", prob, " #prob\n", age.unit, "#age.unit\n", sep="", file=prevfile)
 
   cat(date.sample, " #date.sample\n", Al, " #Al\n", phi.shape, " #phi.shape\n", phi.mean, " #phi.mean\n",
-    s.shape, " #s.shape\n", s.mean, " #s.mean\n", radon.case, " #radon.case\n", Bqkg, " #Bqkg\n", sep="", file=prevfile)
+    s.shape, " #s.shape\n", s.mean, " #s.mean\n", ra.case, " #ra.case\n", Bqkg, " #Bqkg\n", sep="", file=prevfile)
 
   cat(n.supp, " #n.supp\n", sep="", file=prevfile);
 
@@ -597,76 +545,63 @@ Plum.cleanup <- function(set=get('info')) {
     t.a=t.a, t.b=t.b, delta.R=delta.R, delta.STD=delta.STD, prob=prob, date=date(),
     runname=runname, ssize=ssize, dark=dark, MinAge=MinAge, MaxAge=MaxAge,
     cutoff=cutoff, age.res=age.res, after=after,
-    supportedData=supportedData, theta0=theta0, Al=Al, phi.shape=phi.shape, phi.mean=phi.mean, s.shape=s.shape, s.mean=s.mean, radon.case=radon.case, Bqkg=Bqkg)
+    supportedData=supportedData, theta0=theta0, Al=Al, phi.shape=phi.shape, phi.mean=phi.mean, s.shape=s.shape, s.mean=s.mean, ra.case=ra.case, Bqkg=Bqkg)
 }
 
 
 
 #function to merge dets of plum and bacon data
-merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc){
-  if( ncol(detsBacon) >= 5 ) {
+merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc) {
+  if(ncol(detsBacon) >= 5) {
     cc <- detsBacon[,5]
     detsBacon <- detsBacon[,-5]
-  } else {
-    cc <- array(cc, dim=c(nrow(detsBacon),1))
-  }
+  } else
+      cc <- array(cc, dim=c(nrow(detsBacon),1))
 
-  if( ncol(detsBacon) < 9 ){
-
-    for(i in (ncol(detsBacon)+1):9){
-      if( i == 5){
+  if(ncol(detsBacon) < 9 ) {
+    for(i in(ncol(detsBacon)+1):9) {
+      if(i==5) {
         col <- array(delta.R, dim=c(nrow(detsBacon),1))
-      }else if(i == 6){
+      } else if(i==6) {
         col <- array(delta.STD, dim=c(nrow(detsBacon),1))
-      }else if(i == 7){
+      } else if(i==7) {
         col <- array(t.a, dim=c(nrow(detsBacon),1))
-      }else if(i == 8){
+      } else if(i==8) {
         col <- array(t.b, dim=c(nrow(detsBacon),1))
-      }else if(i==9){
+      } else if(i==9) {
         col <- cc
       }
       detsBacon <- cbind(detsBacon, col)
     }
     colnames(detsBacon) <- c("labID", "X210Pb.Bq.kg.", "sd.210Pb.", "depth.cm.", "thickness.cm.", "density.g.cm.3.",  "t.a", "t.b", "cc")
-    #print(detsBacon)
   }
 
-  if( ncol(detsPlum) < 9 ){
+  if(ncol(detsPlum) < 9) {
     for(i in (ncol(detsPlum)+1):9){
-      if( i == 5){
+      if(i==5) {
         col <- array(delta.R, dim=c(nrow(detsPlum),1))
-      }else if(i == 6){
+      } else if(i==6) {
         col <- array(delta.STD, dim=c(nrow(detsPlum),1))
-      }else if(i == 7){
+      } else if(i==7) {
         col <- array(t.a, dim=c(nrow(detsPlum),1))
-      }else if(i == 8){
+      } else if(i==8) {
         col <- array(t.b, dim=c(nrow(detsPlum),1))
-      }else if(i==9){
+      } else if(i==9) {
         col <- array(5, dim=c(nrow(detsPlum),1))
       }
       detsPlum <- cbind(detsPlum, col)
     }
     colnames(detsPlum) <- c("labID", "X210Pb.Bq.kg.", "sd.210Pb.", "depth.cm.", "thickness.cm.", "density.g.cm.3.",  "t.a", "t.b", "cc")
-    #print(detsPlum)
   }
 
   dets <- rbind(detsPlum, detsBacon, make.row.names=FALSE)
-  dets <- dets[ order(dets[,4]),]
+  dets <- dets[order(dets[,4]),]
 }
 
 
 
-# write files to be read by the main Bacon age-depth modelling function
-.write.plum.file <- function(set=get('info')) {
-
-  #a relation between the name of column and his position
-  #These are the column of the plum file
-  idColumn       <- 1
-  plumdataColumn <- 2
-  stdColumn      <- 3
-  depthColumn    <- 4
-  deltaColumn    <- 5
-  rhoColumn      <- 6
+# write files to be read by the main Bacon age-depth modelling function. Has plum-specific settings so differs from write.Bacon.file
+write.plum.file <- function(set=get('info')) {
 
   if(length(set$slump) > 0) {
     dets <- set$slumpdets
@@ -678,6 +613,7 @@ merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc){
     boundary <- set$boundary
   }
 
+  depthColumn <- 4 # column of the depths
   if(is.na(set$d.min) || set$d.min < min(dets[,depthColumn])) { # repeat relevant row, change error and depth
     dets <- rbind(dets[which(dets[,depthColumn] == min(dets[,depthColumn]))[1],], dets, make.row.names=FALSE)
     dets[1,1] <- NA # calling this "d.min" causes issues
@@ -709,7 +645,7 @@ merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc){
   cat("\nCal 4 : ConstCal;", sep="", file=fl)
   cat("\n##          alPhi mPhi  alS  mS     Al   theta0  Radon_case  supported_data_file", file=fl)
   cat("\nCal 5 : Plum, ", set$phi.shape, ", ",  set$phi.mean, ", ",  set$s.shape, ", ", set$s.mean, ", ", set$Al, ", ", set$theta0, ", ",
-        set$radon.case, ", ", set$plum.file,";", sep="", file=fl)
+        set$ra.case, ", ", set$plum.file,";", sep="", file=fl)
   cat("\n##    ", colnames(dets), " ... Plum: 210Pb data",sep=", ", file=fl)
 
   # we need to send the dets with all columns so pre-processing is needed
@@ -728,8 +664,8 @@ merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc){
 
   if(!is.na(hiatus.depths[1])) {
     if(is.null(boundary[1]))
-      message("\n  Hiatus set at depth(s)", hiatus.depths, "\n") else
-        message("\n  Boundary set at depth(s)", boundary, "\n")
+      message("\n  Hiatus set at depth(s) ", hiatus.depths, "\n") else
+        message("\n  Boundary set at depth(s) ", boundary, "\n")
     if(length(set$acc.shape)==1)
       set$acc.shape <- rep(set$acc.shape, length(hiatus.depths)+1)
     if(length(set$acc.mean)==1)
@@ -774,129 +710,4 @@ merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc){
     }	
   close(fl)
   # we have to check that there are no NAs in the .plum file
-}
-
-
-
-# function to read output files into memory
-Plum.AnaOut <- function(fnam, set=get('info')) {
-  out <- read.table(fnam)
-  n <- ncol(out)-1
-  set$nPs  <- n
-  set$TrPs <- nrow(out)
-  set$phi  <- out[,1]
-  set$ps   <- out[,2:(n+1)]
-
-  return(set)
-}
-
-
-
-# read the dets file, converting old formats to new ones if so required
-read.dets.plumbacon <- function(core, otherdates, coredir, set=get('info'), sep=",", dec=".", cc=1) {
-  # if a .csv file exists, read it (checking that it is more recent than any .dat file in the folder). Otherwise, read the .dat file, check the columns, report back if >4 (>5?) columns, and convert to .csv (report this also)
-  
-  dat.file <- paste0(coredir,  core, "/", otherdates, ".dat")
-  if(length(grep(".csv", otherdates)) > 0) # if the name has extension .csv 
-    csv.file <- paste0(coredir, core, "/", otherdates) else
-      csv.file <- paste0(coredir,  core, "/", otherdates, ".csv")
-
-  dR.names <- c("r", "d", "d.r", "dr", "deltar", "r.mn", "rm", "rmn", "res.mean", "res.mn", "delta.r")
-  dSTD.names <- c("d.std", "std", "std.1", "dstd", "r.std", "rstd", "res.sd", "delta.std", "deltastd")
-  ta.names <- c("t", "t.a", "ta", "sta")
-  tb.names <- c("t", "t.b", "tb", "stb")
-  cc.names <- c("c", "cc")
-  suggested.names <- c("labID", "age", "error", "depth", "cc", "dR", "dSTD", "ta", "tb")
-  changed <- 0
-
-  if(file.exists(csv.file)) {
-    dets <- read.table(csv.file, header=TRUE, sep=sep)
-    if(file.exists(dat.file)) # deal with old .dat files
-      if(file.info(csv.file)$mtime < file.info(dat.file)$mtime)
-        message("Warning, the .dat file is newer than the .csv file! I will read the .csv file. From now on please modify ", csv.file, ", not ", dat.file) else
-          message("Reading", csv.file)
-    } else {
-      if(file.exists(paste0(csv.file, ".txt"))) {
-        file.rename(paste0(csv.file, ".txt"), csv.file)
-        message("Removing .txt extension from .csv file")
-      } else {
-        message("No .csv file found, reading", dat.file, "and converting it to .csv")
-        dets <- read.table(dat.file, header=TRUE)
-        changed <- 1
-        }
-    }
-  name <- tolower(names(dets))
-  commas <- grep(",,", readLines(csv.file)) # check if there are too many commas (e.g., lines with just commas)
-  if(length(!is.na(commas)) > 0) # often an artifact of spreadsheet programs
-    stop("check the .csv file in a plain-text editor for 'orphan' commas\n", call.=FALSE)
-
-  # check if 'classic' dets file, which has a different column order from the current default
-  if(ncol(dets) > 4)
-    if(ncol(dets) == 5) { # then probably a 'new' dets file
-      if((name[5] %in% cc.names) && min(dets[,5]) >= 0 && max(dets[,5]) <= 4) {} else # extra check for correct values
-        stop("unexpected name or values in fifth column (cc, should be between 0 and 4). Please check the manual for guidelines in producing a correct .csv file.\n", call.=FALSE)
-    } else
-      if(ncol(dets) == 6) { # probably an 'old' file: dR, dSTD, but could also be cc and delta.R (so no column for delta.STD)
-        if(name[5] %in% dR.names && name[6] %in% dSTD.names) {
-          message("\nHELP!!! 6!!!\n")
-          dets <- cbind(dets[,1:4], rep(cc, nrow(dets)), dets[,5:6]) # some shuffling
-          message(" Assumed order of columns in dets file: lab ID, Age, error, depth, dR, dSTD. \nAdding calibration curve column (fifth column, before dR and dSTD) and saving as", csv.file)
-          changed <- 1
-        } else
-	      stop("unexpected names for columns 5/6. If you want to include delta.R, also add a column for delta.STD. Check the manual for guidelines to producing a correct .csv file.\n", call.=FALSE)
-      } else
-        if(ncol(dets) == 7) { # probably a 'new' file: cc, dR, dSTD
-          if(name[5] %in% cc.names && min(dets[,5]) >= 0 && max(dets[,5]) <= 4 &&
-            name[6] %in% dR.names && name[7] %in% dSTD.names)
-              {} else
-                 stop("unexpected column names, order or values in dets file. \nPlease check the manual for correct dets file formats.\n", call.=FALSE)
-        } else
-          if(ncol(dets) == 8) { # probably an 'old' file: dR, dSTD, ta, tb
-            if(name[5] %in% dR.names && name[6] %in% dSTD.names)
-            if(name[7] %in% ta.names && name[8] %in% tb.names)
-            if(range(dets[,8] - dets[,7]) == c(1,1)) { # check that these set expected student-t values
-              dets <- cbind(dets[,1:4], rep(cc, nrow(dets)), dets[,5:6]) # some shuffling
-              message(" Assumed order of columns in dets file: lab ID, Age, error, depth, dR, dSTD. \nAdding calibration curve column (fifth column, before dR and dSTD) and saving as", csv.file)
-              changed <- 1
-            } else
-              stop("unexpected column names, order or values in dets file. \nPlease check the manual for how to produce a correct .csv file", call.=FALSE)
-          } else
-            if(ncol(dets) == 9) { # most complex case, many checks needed
-              if(name[9] %in% cc.names && # we're almost sure that this is a 'classic' dets file
-                min(dets[,9]) >= 0 && max(dets[,9]) <= 4 && # check that this sets calibration curves
-                  range(dets[,8] - dets[,7]) == c(1,1) && # check that these set expected student-t values
-                    name[5] %in% dR.names && name[6] %in% dSTD.names && # column names as expected?
-                      name[7] %in% ta.names && name[8] %in% tb.names) { # column names as expected?
-                        dets <- dets[,c(1:4,9,5:8)] # shuffle colums around
-                        message(" Assumed order of columns in dets file: lab ID, Age, error, depth, dR, dSTD, t.a, t.b, cc. \nAdapting column order and saving as", csv.file)
-                        changed <- 1
-                      } else
-                        if(name[5] %in% cc.names && # oh, probably a 'new' file from more recent Bacon
-                          min(dets[,5]) >= 0 && max(dets[,5]) <= 4 && # check that this sets cal.curves
-                            range(dets[,9] - dets[,8]) == c(1,1) && # columns 8-9 set student-t correctly
-                              name[8] %in% ta.names && name[9] %in% tb.names && # and are correctly named
-                                name[6] %in% dR.names && name[7] %in% dSTD.names) # all lights are green
-                                  {} else
-                                     stop("unexpected column names, order or values in dets file. \nPlease check the manual for how to produce a correct .csv file", call.=FALSE)
-            } else
-              stop("unexpected column names, order or values in dets file. \nPlease check the manual for how to produce a correct dets file.\n", call.=FALSE)
-
-  # more sanity checks
-  if(!is.numeric(dets[,2]) || !is.numeric(dets[,3]) || !is.numeric(dets[,4]))
-    stop("unexpected values in dets file, I expected numbers. Check the manual.\n", call.=FALSE)
-  if(min(dets[,3]) <= 0) {
-    message("Warning, zero year errors don't exist in Bacon's world. I will increase them to 1 ", set$age.unit, " yr")
-    dets[dets[,3] <= 0,3] <- 1
-    changed <- 1
-  }
-  if( nrow(dets) > 1 && min(diff(dets[,4])) < 0) {
-    message("Warning, the depths are not in ascending order, I will correct this")
-    dets <- dets[ order(dets[,4]), ]
-    changed <- 1
-  }
-
-  # if current dets differ from original .csv file, rewrite it
-  if(changed > 0)
-    write.table(dets, csv.file, sep=paste0(sep, "\t"), dec=dec, row.names=FALSE, col.names=suggested.names[1:ncol(dets)], quote=FALSE)
-  dets
 }
