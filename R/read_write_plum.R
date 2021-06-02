@@ -1,57 +1,15 @@
 
-
-### for running Plum, but is looked for by generic agedepth() function (through draw.pbmodelled()), so is included in the rbacon code
-#' @name tmpbackground
-#' @title calculate probabilities that Pb-210 data have reached background levels
-#' @description Checks which of the Pb-210 data most likely have reached background levels and thus are below the detection limit Al (probabilities between 0 and 1)
-#' @author Maarten Blaauw
-#' @return a list of probabilities for each Pb-210 data point
-#' @param set Detailed information of the current run, stored within this session's memory as variable \code{info}.
-#' @param Al The detection limit. Default \code{Al=0.1}.
-#' @export
-tmpbackground <- function(set=get('info'), Al=set$Al) {
-  if(set$isplum) { # works with Pb-210 data only
-    pb <- 0
-    its <- nrow(set$output)
-#    dets <- set$detsOrig[,c(2,6,3)] # we need maxdepth, mindepth, density
-    dets <- set$dets[which(set$dets[,9] == 5),4:6] # should leave out any non-Pb data
-    ps <- cbind(set$ps)
-    for(i in 1:nrow(dets)) {
-      As <- A.modelled(dets[i,1]-dets[i,2], dets[i,1], dets[i,3])
-      if(set$ra.case == 2)
-        ps <- set$ps[,i] else
-          ps <- set$ps
-      bg <- which((As - ps) <= Al) # which modelled data are at or below the detection limit?
-      pb[i] <- length(bg) / its
-    }
-    return(pb)
-  }
+# estimate how many MCMC iterations will be ran and returned
+plum.its <- function(ssize=2e3, set=get('info'), ACCEP_EV=20, EVERY_MULT=5, BURN_IN_MULT=20) {
+  dims <- set$K + 4 # accrates, start age, accumulation rate, memory
+  if(set$ra.case == 2)
+    dims <- dims + nrow(set$supportedData)
+  store.every <- dims * EVERY_MULT # depends on the amount of parameters
+  MCMC.size <- ACCEP_EV * store.every * (ssize + BURN_IN_MULT) # all iterations
+  MCMC.kept <- MCMC.size - (store.every * BURN_IN_MULT) # removing burnin
+  MCMC.stored <- round((MCMC.kept / store.every / ACCEP_EV) * 3.5) # just an estimate
+  message(" Will run around ", MCMC.size, " iterations and store around ", MCMC.stored)
 }
-
-# function to read plum output files into memory
-tmpPlum.AnaOut <- function(fnam, set=get('info')) {
-  out <- read.table(fnam)
-  n <- ncol(out)-1
-  set$nPs  <- n
-  set$TrPs <- nrow(out)
-  set$phi  <- out[,1]
-  set$ps   <- out[,2:(n+1)]
-  set
-}
-
-
-
-# function to read output file into memory
-tmpBacon.AnaOut <- function(fnam, set=get('info')) {
-  out <- read.table(fnam)
-  n <- ncol(out)-1
-  set$n <- n
-  set$Tr <- nrow(out)
-  set$Us <- out[,n+1]
-  set$output <- out[,1:n]
-  set
-}
-
 
 
 #' @name Plum_runs
@@ -153,6 +111,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
   sdRaColumn  <- 8 # if present
 
   #check that depths are in ascending order
+ # if(nrow(dets) > 1) # some files only have 1, e.g. a historical Cs peak
   if(min(diff(dets[,depthColumn])) < 0) {
     message("Warning, the depths are not in ascending order, I will correct this.")
     dets <- dets[ order(dets[,depthColumn]),]

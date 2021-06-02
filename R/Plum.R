@@ -19,14 +19,16 @@ NULL
 
 library(rbacon) # see also import.R
 
-# done: added Plum.agedepth.ghost(), Plum.agedepth(), tmpBacon.AnaOut() & tmpPlum.AnaOut(). Should be cleaned up for a future version of rbacon (and once that is done, the functions used in agedepth.R should be renamed to their original names again, and/or agedepth.R removed). r
+# do: 
+
+# done: 
 
 # do plum: Adapt default value of dark? .01 works well if a Pb core also has C14 dates. check par righthand toppanel, too much space, check if ResCor is done correctly if using a C14-file, A.rng and Ai in calibrate.plum.plot cannot be saved to info (needed to provide post-run info on fit 210Pb data), is it OK that d.min is set at 0 by default?
 
 #' @name Plum
-#' @title  Main 210Pb age-depth modelling function
-#' @description  This is the main age-depth modelling function of the rplum package for 210Pb age-modelling.
-#' @details  Plum is an approach to age-depth modelling that uses Bayesian statistics in order to reconstruct
+#' @title Main 210Pb age-depth modelling function
+#' @description This is the main age-depth modelling function of the rplum package for 210Pb age-modelling.
+#' @details Plum is an approach to age-depth modelling that uses Bayesian statistics in order to reconstruct
 #' accumulation histories for 210Pb-dated deposits by taking into account prior information, and can combine 210Pb, radiocarbon and other dates (Aquino et al. 2018).
 #'
 #' Plum handles 210Pb and other dated depths within in a core, by dividing a core into many thin vertical sections (by default of \code{thick=1} cm thickness),
@@ -153,7 +155,7 @@ library(rbacon) # see also import.R
 #' @examples
 #' \donttest{
 #'   Plum(ask=FALSE, run=FALSE, coredir=tempfile(), date.sample=2018.5, ra.case=0, n.supp=3)
-#'   Plum.agedepth(age.res=50, d.res=50)
+#'   agedepth(age.res=50, d.res=50)
 #' }
 #' @references
 #' Aquino-Lopez, M.A., Blaauw, M., Christen, J.A., Sanderson, N., 2018. Bayesian analysis of 210Pb dating. Journal of Agricultural, Biological, and Environmental Statistics 23, 317-333
@@ -175,7 +177,7 @@ library(rbacon) # see also import.R
 #' Reimer et al., 2020. The IntCal20 Northern Hemisphere radiocarbon age calibration curve (0–55 cal kBP). Radiocarbon 62. doi: 10.1017/RDC.2020.41
 #'
 #' @export
-Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape = 2, phi.mean = 50, s.shape = 5, s.mean = 10, Al = 0.1, date.sample = c(), n.supp = c(), ra.case=c(), Bqkg = TRUE, seed = NA, prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit="cm", age.unit="yr", unit=depth.unit, acc.shape=1.5, acc.mean=10, mem.strength=10, mem.mean=0.5, boundary=NA, hiatus.depths=NA, hiatus.max=10000, add=c(), after=.0001/thick, cc=1, cc1="IntCal20", cc2="Marine20", cc3="SHCal20", cc4="ConstCal", ccdir="", postbomb=0, delta.R=1, delta.STD=0, t.a=3, t.b=4, normal=FALSE, suggest=TRUE, reswarn=c(10,200), remember=TRUE, ask=TRUE, run=TRUE, defaults="defaultPlum_settings.txt", sep=",", dec=".", runname="", slump=c(), BCAD=FALSE, ssize=2000, th0=c(), burnin=min(1500, ssize), MinAge=c(), MaxAge=c(), cutoff=.001, rounded=1, plot.pdf=TRUE, dark=1, date.res=100, age.res=200, close.connections=TRUE, verbose=TRUE, ...) {
+Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape = 2, phi.mean = 50, s.shape = 5, s.mean = 10, Al = 0.1, date.sample = c(), n.supp = c(), ra.case=c(), Bqkg = TRUE, seed = NA, prob=0.95, d.min=0, d.max=NA, d.by=1, depths.file=FALSE, depths=c(), depth.unit="cm", age.unit="yr", unit=depth.unit, acc.shape=1.5, acc.mean=10, mem.strength=10, mem.mean=0.5, boundary=NA, hiatus.depths=NA, hiatus.max=10000, add=c(), after=.0001/thick, cc=1, cc1="IntCal20", cc2="Marine20", cc3="SHCal20", cc4="ConstCal", ccdir="", postbomb=0, delta.R=0, delta.STD=0, t.a=3, t.b=4, normal=FALSE, suggest=TRUE, reswarn=c(10,200), remember=TRUE, ask=TRUE, run=TRUE, defaults="defaultPlum_settings.txt", sep=",", dec=".", runname="", slump=c(), BCAD=FALSE, ssize=2000, th0=c(), burnin=min(1500, ssize), MinAge=c(), MaxAge=c(), cutoff=.001, rounded=1, plot.pdf=TRUE, dark=1, date.res=100, age.res=200, close.connections=TRUE, verbose=TRUE, ...) {
   # Check coredir and if required, copy example file in core directory
   coredir <- assign_coredir(coredir, core, ask, isPlum=TRUE)
   if(core == "HP1C" || core == "LL14") { # || core == "SIM")
@@ -210,7 +212,7 @@ Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape 
 #        stop("The date must be a numeric value", call.=FALSE)
 #    date.sample = as.numeric(ans)
 #  }
-  theta0 <- 1950 - date.sample
+  theta0 <- 1950 - date.sample # date.sample should be in AD, but internally we work with cal BP
 
   # use the correct radiometric units 
   if(Bqkg)
@@ -222,7 +224,6 @@ Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape 
   if(!is.na(otherdates)) { # core also has cal BP or C-14 dates
     detsBacon <- read.dets(core, coredir, otherdates, sep=sep, dec=dec, cc=cc)
     detsPlum <- dets
-
     # merge radiocarbon and 210Pb dates into the same variable dets
     dets <- merge.dets(dets, detsBacon, delta.R, delta.STD, t.a, t.b, cc)
 
@@ -263,10 +264,13 @@ Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape 
 
     if(suggest) { # adapt prior for mean accumulation rate?
       sugg <- sapply(c(1,2,5), function(x) x*10^(-1:2)) # some suggested "round" values
-      ballpacc <- lm(detsBacon[,2]*1.1 ~ detsBacon[,4])$coefficients[2] # very rough acc.rate estimates, uncalibrated dates
-      ballpacc <- abs(sugg - ballpacc) # get absolute differences between given acc.mean and suggested ones
-      ballpacc <- ballpacc[ballpacc > 0] # do not suggest 0
-      sugg <- sugg[order(ballpacc)[1]] # suggest rounded acc.rate with lowest absolute difference
+      if(nrow(detsBacon) < 2) # if there's only 1 entry, e.g. a Cs peak...
+        sugg <- acc.mean else { # then don't use this but simply use the prior
+          ballpacc <- lm(detsBacon[,2]*1.1 ~ detsBacon[,4])$coefficients[2] # very rough acc.rate estimates, uncalibrated dates
+          ballpacc <- abs(sugg - ballpacc) # absolute differences between given acc.mean and suggested ones
+          ballpacc <- ballpacc[ballpacc > 0] # do not suggest 0
+          sugg <- sugg[order(ballpacc)[1]] # suggest rounded acc.rate with lowest absolute difference
+        }
       if(!sugg %in% acc.mean) {
         ans <- readline(message(" Ballpark estimates suggest changing the prior for acc.mean to ", sugg, " ", age.unit, "/", depth.unit, ". OK? (y/N) "))
         if(tolower(substr(ans,1,1)) == "y")
@@ -488,6 +492,7 @@ Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape 
 
 
   cook <- function() {
+    plum.its(ssize, info) # new June 2021
     txt <- paste0(info$prefix, ".bacon")
     #bacon(txt, outfile, ssize, ccdir)
     #.Call("_rbacon_bacon", PACKAGE="rbacon", txt, outfile, ssize, ccdir)
@@ -496,16 +501,16 @@ Plum <- function(core="HP1C", thick = 1, otherdates=NA, coredir = "", phi.shape 
 
     rbacon::scissors(burnin, info)
 
-#    rbacon::agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=TRUE, age.unit=age.unit, depth.unit=depth.unit, ...) 
-    Plum.agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=TRUE, age.unit=age.unit, depth.unit=depth.unit, ...) # tmp May 21
+    rbacon::agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=TRUE, age.unit=age.unit, depth.unit=depth.unit, ...)
+    #Plum.agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=TRUE, age.unit=age.unit, depth.unit=depth.unit, ...) # tmp May 21
 
     if(plot.pdf)
       if(interactive())
         if(length(dev.list()) > 0)
           dev.copy2pdf(file=paste0(info$prefix, ".pdf")) else {
             pdf(file=paste0(info$prefix, ".pdf"))
-            # agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=FALSE, age.unit=age.unit, depth.unit=depth.unit, rounded=rounded, ...)
-            Plum.agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=FALSE, age.unit=age.unit, depth.unit=depth.unit, rounded=rounded, ...) # tmp May 21
+            agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=FALSE, age.unit=age.unit, depth.unit=depth.unit, rounded=rounded, ...)
+            # Plum.agedepth(info, BCAD=BCAD, depths.file=depths.file, depths=depths, verbose=FALSE, age.unit=age.unit, depth.unit=depth.unit, rounded=rounded, ...) # tmp May 21
             dev.off()
           }
   }

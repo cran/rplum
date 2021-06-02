@@ -1,3 +1,8 @@
+# rplum 0.2.2
+* removed closeAllConnections() option as requested by CRAN
+* if there is only one date in otherdates (e.g., a historical Cs peak), acc.rate isn't set to overly low values any more
+* added a function to estimate how many iterations will be run and returned
+
 # rplum 0.2.1
 * further separation of rbacon and rplum
 * added LL14, a core with Pb-210, radon and C14 dates (core kindly provided by Dr Lysanna Anderson, USGS)

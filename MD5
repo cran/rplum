@@ -1,10 +1,10 @@
-4d147dc5e41676e8ee8f7aa7cefcbb2e *DESCRIPTION
-480c1d0fd9c1465ec36e9d626c6d6898 *NAMESPACE
-5871e91c5a8c159baf539419e8c08bbb *NEWS.md
-68dce92acfc7fa22aa1ad774b0bf7fb9 *R/Plum.R
-6e2aeef24d5d6e49e68e283dd9b30f8f *R/agedepth.R
+523d589f10c4fe3e73236324538a89b6 *DESCRIPTION
+fbe4ed1e3d11c1c8998aae0b931fa3e1 *NAMESPACE
+a48a08ccdd24e9f1583af3d11fa84915 *NEWS.md
+8e995cccf39f932b223c80ce4333d783 *R/Plum.R
+0c09e3e815f04f6f9dac01d912649afe *R/fromrbacon.R
 6ddd5f3606a38e6250d415cfd9d888e4 *R/import.R
-03797d91b3263dd864ad31a1452d024d *R/read_write_plum.R
+0972202fac587850d46750fe79a1255b *R/read_write_plum.R
 1b9cba4f0e289d3fb5cb54713e35b7ba *inst/extdata/Cores/HP1C/HP1C.csv
 d22dd2e674633f3ad0582aa893691191 *inst/extdata/Cores/HP1C/HP1C_51.bacon
 45eda0c9170cd7e620a91cc3177bce3c *inst/extdata/Cores/HP1C/HP1C_51.out
@@ -16,9 +16,7 @@ d22dd2e674633f3ad0582aa893691191 *inst/extdata/Cores/HP1C/HP1C_51.bacon
 e6becb7dd9d7b158675fba8fb15b7391 *inst/extdata/Cores/LL14/LL14_14C.csv
 08fe7a63e758e2a6775d634dbb965a60 *inst/extdata/defaultBacon_settings.txt
 758eac25a1c4011598f90a3c2b1cc84f *inst/extdata/defaultPlum_settings.txt
-1201fb3f0ace048ad9398b2e6ebcc72b *man/Plum.Rd
-350ccf46a9afd2803cbe130ff47729d7 *man/Plum.agedepth.Rd
+badd1fbf6d526032d914de59b9d7c231 *man/Plum.Rd
 8dd134af748c020073df566e9be835d1 *man/Plum.cleanup.Rd
 3333ab7383dbd33a802b56de67bae113 *man/Plum_runs.Rd
 6907565e6cd7ec9af31fbd24d26fdbf7 *man/rplum.Rd
-45cefa6189d987d45f269bd8a87e8f69 *man/tmpbackground.Rd
