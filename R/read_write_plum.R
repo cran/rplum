@@ -1,4 +1,4 @@
-
+#
 # estimate how many MCMC iterations will be ran and returned
 plum.its <- function(ssize=2e3, set=get('info'), ACCEP_EV=20, EVERY_MULT=5, BURN_IN_MULT=20) {
   dims <- set$K + 4 # accrates, start age, accumulation rate, memory
@@ -27,8 +27,8 @@ Plum_runs <- function(coredir=get('info')$coredir)
 
 # Do a regression to determine the optimal number of supported data to use; the minimum is 3
 check.equi <- function(dets, suggest=TRUE) {
-  rawdata <- dets[,4] #210Pb
-  rawsd <- dets[,5] #sd(210pb)
+  rawdata <- dets[,2] #210Pb
+  rawsd <- dets[,3] #sd(210pb)
   # deps    <- dets[,2] #depth
 
   lendat <- length(rawdata)
@@ -62,7 +62,7 @@ check.equi <- function(dets, suggest=TRUE) {
   }
 
   if(suggest) {
-    ans <- readline(message("The regression process proposes using the last ", as.integer(coe), " data points as estimates of the supported activity, with a p-value of ", round((reg),3), ", OK? (Y/n) "))
+    ans <- readline(message("The regression process proposes using the bottom ", as.integer(coe), " data points as estimates of the supported activity, with a p-value of ", round((reg),3), ", OK? (Y/n) "))
     if(!(ans=="y" || ans=="")) {
       message("  OK. Please provide correct n.supp (as Plum option or in the .csv file).")
       stopQuietly()
@@ -131,7 +131,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
           if(!is.na(dets[2,n]))
             if(dets[2,n] != "")
               nsupp.infile <- dets[2,n]
-        if(length(dets[3,n]) > 0) # 3rd, which radium case to use to estimate supported
+        if(length(dets[3,n]) > 0) # calib.plot3rd, which radium case to use to estimate supported
           if(!is.na(dets[3,n]))
             if(dets[3,n] != "")
               racase.infile <- dets[3,n]
@@ -403,7 +403,7 @@ Plum.cleanup <- function(set=get('info')) {
 
 
 # read in default values, values from previous run, any specified values, and report the desired one. Internal function. Differs from Bacon.settings because it requires Pb-specific settings.
-.plum.settings <- function(core, coredir, dets, thick, remember=TRUE, d.min, d.max, d.by, depths.file,
+.plum.settings <- function(core, coredir, dets, detsPlum, detsBacon, thick, remember=TRUE, d.min, d.max, d.by, depths.file,
   slump, acc.mean, acc.shape, mem.mean, mem.strength, boundary, hiatus.depths, hiatus.max, hiatus.shape,
   BCAD, cc, postbomb, cc1, cc2, cc3, cc4, depth.unit, normal, t.a, t.b, delta.R, delta.STD, prob,
   defaults, runname, ssize, dark, MinAge, MaxAge, cutoff, age.res, after, age.unit,
@@ -449,10 +449,12 @@ Plum.cleanup <- function(set=get('info')) {
   }
 
   if(is.na(d.min) || d.min=="NA")
-    d.min <- min(dets[,4])
+    d.min <- min(detsPlum[,4])
   if(is.na(d.max) || d.max=="NA")
-    #d.max <- max(dets[,4])
-    d.max <- max(dets[,4]) # tmp
+    if(length(detsBacon) == 0)  # Dec 2022. Should this only be if ra.case=0?
+        d.max <- max(detsPlum[1:(nrow(detsPlum)-n.supp),4])+(thick/5) else
+          d.max <- max(detsPlum[1:(nrow(detsPlum)-n.supp),4], detsBacon[,4])+(thick/5)
+
   if(length(acc.shape) < length(acc.mean))
     acc.shape <- rep(acc.shape, length(acc.mean)) else
       if(length(acc.shape) > length(acc.mean))
@@ -519,7 +521,7 @@ merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc) {
 
   if(ncol(detsBacon) < 9 ) {
     for(i in(ncol(detsBacon)+1):9) {
-      if(i==5) {
+      if(i==5) {detsPlum
         col <- array(delta.R, dim=c(nrow(detsBacon),1))
       } else if(i==6) {
         col <- array(delta.STD, dim=c(nrow(detsBacon),1))
@@ -578,6 +580,13 @@ write.plum.file <- function(set=get('info')) {
     dets[1,1] <- NA # calling this "d.min" causes issues
     dets[1,3] <- max(1e5, 1e3*dets[,4], 1e3*dets[,3])
     dets[1,depthColumn] <- set$d.min
+    bg <- set$supportedData[,3] # now reassign depths of the data in the tail
+    # tail measurements do not require depths, so we reassign them to dummy depths
+    if(set$ra.case < 2) # or <2?
+      for(i in 1:length(bg)) {
+          d_i <- which(dets[,depthColumn] == bg[i])
+          dets[d_i,depthColumn] <- set$d.min-10 # dummy depths, outside of the range of the core depths
+        }
   }
 
   if(is.na(set$d.max) || set$d.max > max(dets[,depthColumn])) { # repeat relevant row, change error and depth

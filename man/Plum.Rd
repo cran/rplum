@@ -60,9 +60,9 @@ Plum(
   runname = "",
   slump = c(),
   BCAD = FALSE,
-  ssize = 2000,
+  ssize = 4000,
   th0 = c(),
-  burnin = min(1500, ssize),
+  burnin = min(500, ssize),
   MinAge = c(),
   MaxAge = c(),
   cutoff = 0.001,
@@ -176,17 +176,17 @@ Alternatively produce a new folder, and add your curve as well as the default ca
 
 \item{delta.STD}{Error of core-wide age offsets (e.g., regional marine offsets).}
 
-\item{t.a}{The dates are treated using the student's t distribution by default (\code{normal=FALSE}).
-The student's t-distribution has two parameters, t.a and t.b, set at 3 and 4 by default (see Christen and Perez, 2010).
+\item{t.a}{The dates are treated using the t distribution by default (\code{normal=FALSE}).
+The t-distribution has two parameters, t.a and t.b, set at 3 and 4 by default (see Christen and Perez, 2009).
 If you want to assign narrower error distributions (more closely resembling the normal distribution), set t.a and t.b at for example 33 and 34 respectively (e.g., for specific dates in your .csv file).
 For symmetry reasons, t.a must always be equal to t.b-1.}
 
-\item{t.b}{The dates are treated using the student's t distribution by default (\code{normal=FALSE}).
-The student's t-distribution has two parameters, t.a and t.b, set at 3 and 4 by default (see Christen and Perez, 2010).
+\item{t.b}{The dates are treated using the t distribution by default (\code{normal=FALSE}).
+The t-distribution has two parameters, t.a and t.b, set at 3 and 4 by default (see Christen and Perez, 2010).
 If you want to assign narrower error distributions (more closely resembling the normal distribution), set t.a and t.b at for example 33 and 34 respectively (e.g., for specific dates in your .csv file).
 For symmetry reasons, t.a must always be equal to t.b-1.}
 
-\item{normal}{By default, Plum uses the student's t-distribution to treat the dates. Use \code{normal=TRUE} to use the normal/Gaussian distribution. This will generally give higher weight to the dates.}
+\item{normal}{By default, Plum uses the t-distribution to treat the dates. Use \code{normal=TRUE} to use the normal/Gaussian distribution. This will generally give higher weight to the dates.}
 
 \item{suggest}{If initial analysis of the data indicates abnormally slow or fast accumulation rates, Plum will suggest to change the prior.
 Also, if the length of the core would cause too few or too many sections with the default settings, Plum will suggest an alternative section thickness \code{thick}, and it will suggest approaches to estimating supported Pb-120. 
@@ -277,8 +277,7 @@ Plum also needs the date of sampling, in AD (\code{date.sample}).
 }
 \examples{
 \donttest{
-  Plum(ask=FALSE, run=FALSE, coredir=tempfile(), date.sample=2018.5, ra.case=0, n.supp=3)
-  agedepth(age.res=50, d.res=50)
+  Plum(ask=FALSE, ssize=100, coredir=tempfile(), date.sample=2018.5, ra.case=0, n.supp=3)
 }
 }
 \references{
