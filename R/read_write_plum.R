@@ -32,7 +32,7 @@ check.equi <- function(dets, suggest=TRUE) {
   # deps    <- dets[,2] #depth
 
   lendat <- length(rawdata)
-  numdat <- as.integer(.5*lendat) # why 0.5?
+  numdat <- ceiling(.5*lendat) # half of the data
   usedat <- rawdata[(lendat-3):lendat]
   usesd  <- rawsd[(lendat-3):lendat]
   usex   <- 1:length(usedat)
@@ -117,6 +117,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
     dets <- dets[ order(dets[,depthColumn]),]
     changed <- TRUE
   }
+  
   date.infile <- NA; nsupp.infile <- NA; racase.infile <- NA #; Bqkg.infile <- NA
   if(ncol(dets) == 6 || ncol(dets) == 8) # no additional information in file
     detsOrig <- dets else
@@ -178,7 +179,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
     if(length(racase.asoption) == 0)
       message("No radium-226 data, setting ra.case to 0, using tail data to estimate supported Pb-210") else {
         if(racase.asoption != 0)
-          message("Setting ra.case to 0 as no radium-226 data provided, using tail data to estimate supported Pb-210") else
+          message("Setting ra.case to 0 since no radium-226 data provided, using tail data to estimate supported Pb-210") else
             message("No radium-226 data, setting ra.case to 0")
         }
     ra.case <- 0
@@ -260,24 +261,31 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
     }
   }
 
-  if(ra.case < 2) { # n.supp cannot be used if ra.case 2 (check with Marco that this is correct!)
-    if(ra.case == 1)
-      message("Besides using the radium data, the tail Pb-210 data can also be used to estimate supported Pb-210. ")
+  # decide on which measurements to use as 'tail' or 'background'
+  if(ra.case == 2) # n.supp cannot be used if ra.case 2 (check with Marco that this is correct!)
+    n.supp <- 0 else
+    if(ra.case < 2) { 
+      if(ra.case == 1)
+        message("Besides using the radium data, the tail Pb-210 data can also be used to estimate supported Pb-210. ")
+      if(ra.case == 0)
+       if(nrow(dets) < 7) {
+	      message("Warning! Very few data points. Setting the bottom one to be background - scary stuff.")
+		  nsupp.asoption <- 1
+	   } 
+    }
     n.supp <- choice(nsupp.infile, nsupp.asoption, "number of supported data", "",, check.equi(dets))
-  }
-  if(ra.case == 2)
-    n.supp <- 0
-
+	
+	
   if(length(Bqkg) == 0 || !(Bqkg %in% c(0, 1))) {
     message("Assuming that the Pb units are in Bq/kg, Bqkg=1")
     Bqkg <- 1
   }
 
   # now put the chosen options into the .csv file if they differ from what's in there already
-  choices <- c(date.sample, n.supp, ra.case, rep("", nrow(dets)-3)) # empty after line 4
+  choices <- c(date.sample, n.supp, ra.case, rep("", max(0, nrow(dets)-3))) # empty after line 4
   suggested.names <- c("labID", "depth(cm)","density(g/cm^3)","210Pb(Bq/kg)","sd(210Pb)","thickness(cm)", "226Ra(Bq/kg)", "sd(226Ra)", "settings")
   if(ra.case == 0) # then no radium columns
-   suggested.names <- suggested.names[-(7:8)]
+    suggested.names <- suggested.names[-(7:8)]
 
   if(ncol(dets) %in% c(6,8)) { # no data provided in the .csv file
     changed <- TRUE
@@ -317,7 +325,7 @@ read.dets.plum <- function(core, coredir, n.supp=c(), date.sample, sep=",", dec=
         supportedData <- supportedData[-elim,]
       }
 
-      if(length(n.supp) > 0)
+     if(length(n.supp) > 0)
         if(n.supp > 0) {
           raColumn <- 4
           sdRaColumn <- 5
@@ -450,10 +458,10 @@ Plum.cleanup <- function(set=get('info')) {
 
   if(is.na(d.min) || d.min=="NA")
     d.min <- min(detsPlum[,4])
-  if(is.na(d.max) || d.max=="NA")
+  if(is.na(d.max) || d.max=="NA") 
     if(length(detsBacon) == 0)  # Dec 2022. Should this only be if ra.case=0?
         d.max <- max(detsPlum[1:(nrow(detsPlum)-n.supp),4])+(thick/5) else
-          d.max <- max(detsPlum[1:(nrow(detsPlum)-n.supp),4], detsBacon[,4])+(thick/5)
+          d.max <- max(detsPlum[1:(nrow(detsPlum)-n.supp),4], detsBacon[,4])+(thick/5)		  
 
   if(length(acc.shape) < length(acc.mean))
     acc.shape <- rep(acc.shape, length(acc.mean)) else
@@ -512,8 +520,8 @@ Plum.cleanup <- function(set=get('info')) {
 
 
 
-#function to merge dets of plum and bacon data
-merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc) {
+#internal function to merge dets of plum and bacon data
+merge_dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc) {
   if(ncol(detsBacon) >= 5) {
     cc <- detsBacon[,5]
     detsBacon <- detsBacon[,-5]
@@ -563,7 +571,7 @@ merge.dets <- function(detsPlum, detsBacon, delta.R, delta.STD, t.a, t.b, cc) {
 
 
 # write files to be read by the main Bacon age-depth modelling function. Has plum-specific settings so differs from write.Bacon.file
-write.plum.file <- function(set=get('info')) {
+write.plum.file <- function(set=get('info'), younger.than=c(), older.than=c(), save.info=TRUE) {
 
   if(length(set$slump) > 0) {
     dets <- set$slumpdets
@@ -585,9 +593,9 @@ write.plum.file <- function(set=get('info')) {
     # tail measurements do not require depths, so we reassign them to dummy depths
     if(set$ra.case < 2) # or <2?
       for(i in 1:length(bg)) {
-          d_i <- which(dets[,depthColumn] == bg[i])
-          dets[d_i,depthColumn] <- set$d.min-10 # dummy depths, outside of the range of the core depths
-        }
+        d_i <- which(dets[,depthColumn] == bg[i])
+        dets[d_i,depthColumn] <- set$d.min-10 # dummy depths, outside of the range of the core depths
+      }
   }
 
   if(is.na(set$d.max) || set$d.max > max(dets[,depthColumn])) { # repeat relevant row, change error and depth
@@ -612,23 +620,26 @@ write.plum.file <- function(set=get('info')) {
     else
       paste0("\nCal 4 : GenericCal, ", set$cc4, ";"), sep="", file=fl)
   cat("\nCal 4 : ConstCal;", sep="", file=fl)
-  cat("\n\n##          alPhi mPhi  alS  mS     Al   theta0  Radon_case  supported_data_file", file=fl)
+  cat("\n\n##\talPhi\tmPhi\talS\tmS\tAl\ttheta0\tRadon_case\tsupported_data_file", file=fl)
   cat("\nCal 5 : Plum, ", set$phi.shape, ", ",  set$phi.mean, ", ",  set$s.shape, ", ", set$s.mean, ", ", set$Al, ", ", set$theta0, ", ",
         set$ra.case, ", ", set$plum.file,";", sep="", file=fl)
-  cat("\n##    ", colnames(dets), " ... Plum: 210Pb data",sep=", ", file=fl)
+  cat("\n##    ", colnames(dets), " ... Plum: 210Pb data", sep=", ", file=fl)
 
+  k <- 0 # counter for non-210Pb data
   # we need to send the dets with all columns so pre-processing is needed
-  for( i in 1:nrow(dets) ) {
-    cat( "\nDet ", i-1, " : ", as.character(dets[i,1]),
-        " , ", dets[i,2],
-        ", ", dets[i,3],
-        ", ", dets[i,4],
-        ", ", dets[i,5],
-        ", ", dets[i,6],
-        ", ", dets[i,7],
-        ", ", dets[i,8],
-        ", ", dets[i,9],
-        ";", sep="", file=fl)
+  for(i in 1:nrow(dets) ) {
+    firstentry <- "\nDet " # April 2024, deals with older/younger than dates. But should not be done for 210Pb data!
+    if(dets[i,9] < 5) { # then it's cal BP or 14C
+      k <- k+1	
+      if(k %in% older.than)
+        firstentry <- "\nDetCensor "
+      if(k %in% younger.than)
+        firstentry <- "\nDetCensorE "
+	}	 	  
+    cat(firstentry, i-1, " : ", as.character(dets[i,1]),
+        " , ", dets[i,2], ", ", dets[i,3], ", ", dets[i,4],
+        ", ", dets[i,5], ", ", dets[i,6], ", ", dets[i,7],
+        ", ", dets[i,8], ", ", dets[i,9], ";", sep="", file=fl)
   }
 
   if(!is.na(hiatus.depths[1])) {
@@ -641,7 +652,8 @@ write.plum.file <- function(set=get('info')) {
       set$acc.mean <- rep(set$acc.mean, length(hiatus.depths)+1)
     if(length(set$hiatus.max)==1)
       set$hiatus.max <- rep(set$hiatus.max, length(hiatus.depths))
-    assign_to_global("info", set)
+    if(save.info)
+      assign_to_global("info", set)
     cat("\n\n### Depths and priors for fixed hiatuses, in descending order",
       "\n##### cm  alpha beta      ha     hb", file=fl)
     for(i in length(hiatus.depths):1)
