@@ -1,11 +1,11 @@
-3c954bcbb3710e498e8c922670198776 *DESCRIPTION
+86a67fde6500850065e78d7953189fd7 *DESCRIPTION
 05e9bb22a8649ef9cf79b6cb86554e0a *NAMESPACE
-cd7ebbc7336dd551aac918f4781393a7 *NEWS.md
+21e0ce5422c8a9a4345ea9fe3cf20bd0 *NEWS.md
 0c09e3e815f04f6f9dac01d912649afe *R/fromrbacon.R
 7ac504054fdcb95dd5e2999c71f706e1 *R/import.R
 224e15920ac7fb84cf319533b3f398b9 *R/read_write_plum.R
 24c7b98e84225a770360f7ac78852294 *R/rplum-package.R
-c2f3fe8aeaa0ec4698c5740662bd87bd *R/rplum.R
+b4ca18e9991707219ea0b9efec134d81 *R/rplum.R
 aa5e5a2cbfaea3d9b6cdbe378ac48cee *build/partial.rdb
 4bda04139bd980173eda08c699141b17 *build/vignette.rds
 7de223fc6b146616b01074a3bf13ad6e *inst/CITATION
