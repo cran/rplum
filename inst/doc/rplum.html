@@ -380,15 +380,13 @@ to update it), install it like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;rplum&quot;</span>)</span></code></pre></div>
 <p>To load it, type:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(rplum)</span></code></pre></div>
-<pre><code>## Loading required package: rbacon</code></pre>
-<pre><code>## Loading required package: rice</code></pre>
 </div>
 <div id="running-rplum" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Running rplum</h1>
 <p>To get started, run <em>Plum</em> like this (using the default core,
 accepting all options, going for a short and fast run, and storing the
 results in a temporary directory):</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">Plum</span>(<span class="at">ask=</span><span class="cn">FALSE</span>, <span class="at">suggest=</span><span class="cn">FALSE</span>, <span class="at">ssize=</span><span class="dv">100</span>, <span class="at">coredir=</span><span class="fu">tempdir</span>())</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">Plum</span>(<span class="at">ask=</span><span class="cn">FALSE</span>, <span class="at">suggest=</span><span class="cn">FALSE</span>, <span class="at">ssize=</span><span class="dv">100</span>, <span class="at">coredir=</span><span class="fu">tempdir</span>())</span></code></pre></div>
 <p>When asked, provide the date when the samples were measured (2018),
 accept the suggested tail measurements to estimate supported Pb (n.supp
 = 3), and set ra.case to 0 (no radium present; see below).</p>
@@ -424,8 +422,8 @@ will expect to find other cores, including yours.</p>
 <h1><span class="header-section-number">4</span> Files</h1>
 <p>Now we take a closer look at the structure of the data file of core
 HP1C.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">system.file</span>(<span class="st">&quot;extdata/Cores/HP1C/HP1C.csv&quot;</span>, <span class="at">package=</span><span class="st">&quot;rplum&quot;</span>))</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">head</span>(dat)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">system.file</span>(<span class="st">&quot;extdata/Cores/HP1C/HP1C.csv&quot;</span>, <span class="at">package=</span><span class="st">&quot;rplum&quot;</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">head</span>(dat)</span></code></pre></div>
 <pre><code>##    labID depth.cm. density.g.cm.3. X210Pb.Bq.kg. sd.210Pb. thickness.cm.
 ## 1 Sim-00         1      0.04466667        371.73     11.90             1
 ## 2 Sim-01         2      0.04740000        456.39     15.08             1
@@ -448,7 +446,7 @@ file the exact same name as the folder, within the Plum_runs folder.
 E.g., if your core is called MyCore, the file should be stored as
 <code>Plum_runs\MyCore\MyCore.csv</code>. Then run, specifying the date
 that your samples were measured, e.g. if this was in June 2014:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">Plum</span>(<span class="st">&quot;MyCore&quot;</span>, <span class="at">sample.date=</span><span class="fl">2014.5</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">Plum</span>(<span class="st">&quot;MyCore&quot;</span>, <span class="at">sample.date=</span><span class="fl">2014.5</span>)</span></code></pre></div>
 <p>The default is to use the units Bq/kg for the Pb210 measurements. If
 yours are in dpm/g instead, use <code>Bqkg=FALSE</code>.</p>
 <div id="providing-information-on-supported-lead" class="section level2" number="4.1">
@@ -484,7 +482,7 @@ whereas the former assumes it is varying.</p>
 problem. Just use a file with the same formatting as that of rbacon (<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>), save it
 in the directory of the core, and provide its name as an option,
 e.g.:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">Plum</span>(<span class="st">&quot;MyCore&quot;</span>, <span class="at">otherdates=</span><span class="st">&quot;MyCore_C14.csv&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">Plum</span>(<span class="st">&quot;MyCore&quot;</span>, <span class="at">otherdates=</span><span class="st">&quot;MyCore_C14.csv&quot;</span>)</span></code></pre></div>
 </div>
 </div>
 <div id="further-information" class="section level1" number="5">

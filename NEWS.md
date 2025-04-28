@@ -1,3 +1,11 @@
+# rplum 0.5.2
+* it is now an error if no radium measurements are provided (ra.case=0) while n.supp is set to 0
+* through rbacon (version >=3.4.1), posterior values for phi and supported are now provided
+* to plot depths beyond where background has been reached, use both `d.max` and `remove.tail=FALSE`
+* radiocarbon ages can now be entered as F14C or pMC values (e.g. for postbomb dates). Please indicate using the F14C or pMC option which ones are in F14C/pMC (e.g., `Bacon(F14C=2:4)` if dates 2 to 4 are in F14C). These values will then automatically be rewritten as C14 ages within the C14 .csv file.
+* When running Plum as `tmp <- Plum(save.info=FALSE)`, no additional variables beside 'tmp' will be saved in the session. For subsequent calculations, provide 'tmp', e.g. as in `Bacon.hist(20:40, set=tmp)`. The default remains to save an object 'info' to the session, and this object will then be used to make any further calculations using `set=get('info')`. 
+* rbacon 3.4.1 has some issues in `draw.pbmodelled` (related to plotting bluescale images), `PlotSuppPost` (should calculate mean(unlist(set$ps)) instead of mean(set$ps)) and `agedepth` (doesn't place the results of draw.pbmodelled into `set`). So we're temporally placing updated versions of these functions in the file 'frombacon.R' until the next version of `rbacon` (probably 3.4.2) is on CRAN.
+
 # rplum 0.5.1
 * further measures to link to the new 'rice' package (and not 'rintcal')
 
@@ -5,7 +13,7 @@
 * save.ages has been renamed to save.elbowages (for consistency with rbacon)
 * 'olderthan' and 'youngerthan' ages can now be used (only non-210Pb)
 * now links to the new 'rice' package
-* if there are 7 or fewer data points, a warning will be provided (instead of an obscure error). This has to do with there being a need for at least 4 datapoints to estimate background levels.
+* if there are 7 or fewer data points, a warning will be provided (instead of an obscure error). This has to do with there being a need for at least 4 datapoints to estimate background levels
 
 # rplum 0.4.0
 * repaired a bug which crashed the session if cc=4 was specified
