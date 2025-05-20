@@ -1,11 +1,11 @@
-f29089f251605409529ef4ecc5e63c2f *DESCRIPTION
-b55c67349860782b9693d498d251ad2c *NAMESPACE
-5396ce4e79ee9321985e4eab06a50a91 *NEWS.md
-f8fae13dd44bfcfcebd3f21c2b8a488c *R/fromrbacon.R
+5113a503f0964ec46a041fb192480650 *DESCRIPTION
+48fd116bb6f54c919cd6ee26621a022c *NAMESPACE
+252ddee10b91299ab0407cdd51d8751d *NEWS.md
+813a26999484764a6d184074e6dc4d2f *R/fromrbacon.R
 7ac504054fdcb95dd5e2999c71f706e1 *R/import.R
 b40ad3c1dbb189f7e17487cc03e8c109 *R/read_write_plum.R
 9033eeef9960b38d499ada545eefd8ec *R/rplum-package.R
-11e314e37424028c4723d259d26e3b77 *R/rplum.R
+c09f2db828e9c7f0adde73263e80c149 *R/rplum.R
 b52aabe9a2757fc86742763db9dafc9b *build/partial.rdb
 89311c36b1dbca7127b3bf859b53ce07 *build/vignette.rds
 7de223fc6b146616b01074a3bf13ad6e *inst/CITATION
@@ -20,8 +20,6 @@ e6becb7dd9d7b158675fba8fb15b7391 *inst/extdata/Cores/LL14/LL14_14C.csv
 34fe81aeccb1e0b0e245c1d58ab5dcdf *man/Plum.Rd
 8dd134af748c020073df566e9be835d1 *man/Plum.cleanup.Rd
 3333ab7383dbd33a802b56de67bae113 *man/Plum_runs.Rd
-54b355615d7e3e38537afccb166ad85f *man/agedepth.Rd
-a01c29d51ce58ba692ab7ee7549ed9fa *man/draw.pbmodelled.Rd
 51a932b7ddbde04ce0919260d070c63b *man/rplum.Rd
 41ab62b45f5066f789dd18b1f0521c3c *vignettes/images/chron.png
 f2c19d38c65cff127de23241f17bfea8 *vignettes/rplum.Rmd
